@@ -257,14 +257,27 @@ function setupEventListeners() {
     });
   });
 
-  // Responsive redraw on mobile device rotation or screen resize
+  // Responsive redraw on mobile device rotation or significant width changes
+  let lastWindowWidth = window.innerWidth;
   window.addEventListener('resize', debounce(() => {
+    const curWidth = window.innerWidth;
+    // Ignorar si el ancho no ha cambiado (evita re-renders cuando la barra de direcciones se oculta al hacer scroll en móvil)
+    if (Math.abs(curWidth - lastWindowWidth) < 25) return;
+    lastWindowWidth = curWidth;
+
     if (State.activeMainView === 'dashboard') {
-      renderStockCards();
+      // Re-dibujar únicamente los canvas sparklines sin destruir los nodos del DOM
+      Object.keys(State.quotesData).forEach(sym => {
+        const sparkCanvas = document.getElementById(`spark-${sym}`);
+        const stock = State.quotesData[sym];
+        if (sparkCanvas && stock && stock.sparkline) {
+          ChartEngine.renderSparkline(sparkCanvas, stock.sparkline, stock.changePercent >= 0);
+        }
+      });
     } else if (State.activeMainView === 'heatmap') {
       renderHeatmap();
     }
-  }, 250));
+  }, 200));
 
   // Category Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {

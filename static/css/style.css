@@ -1291,29 +1291,6 @@ body.light-theme ::-webkit-scrollbar-thumb {
   background-color: var(--bg-surface);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .app-header {
-    padding: 10px 14px;
-  }
-  .header-inner {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .header-actions {
-    justify-content: space-between;
-  }
-  .main-container {
-    padding: 14px;
-  }
-  .stocks-grid {
-    grid-template-columns: 1fr;
-  }
-  .portfolio-summary-bar {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 /* ========================================================
    PREDICTIVE ANALYSIS MODAL & GAUGES
    ======================================================== */
@@ -2024,252 +2001,331 @@ body.light-theme ::-webkit-scrollbar-thumb {
 }
 
 /* ========================================================
-   MOBILE-FIRST OPTIMIZATIONS & RESPONSIVE BREAKPOINTS
+   NAVIGATION DUAL LABELS (DESKTOP VS MOBILE)
    ======================================================== */
+.nav-label-short {
+  display: none;
+}
+.nav-label-long {
+  display: inline;
+}
 
 /* Global touch feel & scroll behavior */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
-  position: relative;
-}
-
 button, a, input, select {
   touch-action: manipulation;
 }
 
-/* Tablet & Smaller Screens Breakpoint (<= 992px) */
-@media (max-width: 992px) {
-  .app-header {
-    padding: 10px 16px;
+/* ========================================================
+   TABLET & LAPTOP RESPONSIVE (<= 1100px)
+   ======================================================== */
+@media (max-width: 1100px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
   }
-
-  .header-inner {
-    gap: 12px;
-  }
-
-  .market-status-pill span {
-    max-width: 130px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .main-container {
-    padding: 18px 14px;
-  }
-
-  .stocks-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  .news-section {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow-y: visible;
+    margin-top: 20px;
   }
 }
 
-/* Mobile Screens Breakpoint (<= 768px) */
+/* ========================================================
+   MOBILE SCREENS BREAKPOINT (<= 768px)
+   ======================================================== */
 @media (max-width: 768px) {
-  /* Header reorganization into 2 clean rows */
+  /* Navigation dual labels: Show concise labels on mobile */
+  .nav-label-long {
+    display: none;
+  }
+  .nav-label-short {
+    display: inline;
+  }
+
+  /* Compact Top Ticker Tape */
+  .top-ticker-bar {
+    height: 32px;
+  }
+  .ticker-index-item {
+    font-size: 0.74rem;
+    gap: 6px;
+  }
+  .badge-pct {
+    font-size: 0.68rem;
+    padding: 1px 5px;
+  }
+
+  /* Header: 2-Row CSS Grid Architecture (Row 1: Brand & Actions, Row 2: Search) */
   .app-header {
+    position: relative; /* Scrolls away cleanly on mobile so user gets maximum viewport */
+    top: auto;
     padding: 10px 12px;
   }
 
   .header-inner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+      "brand actions"
+      "search search";
     gap: 10px 8px;
+    align-items: center;
+    width: 100%;
   }
 
   .brand-section {
+    grid-area: brand;
+    display: flex;
+    align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   .logo-badge {
     width: 32px;
     height: 32px;
     font-size: 0.95rem;
+    flex-shrink: 0;
   }
 
   .brand-text h1 {
     font-size: 1.1rem;
+    white-space: nowrap;
   }
 
   .brand-tag {
-    font-size: 0.6rem;
-    padding: 1px 5px;
+    display: none;
   }
 
   .market-status-pill {
-    padding: 3px 6px;
-    font-size: 0.68rem;
-    gap: 4px;
+    padding: 4px 6px;
+    background: transparent;
+    border: none;
   }
   .market-status-pill span {
-    max-width: 100px;
+    display: none; /* Just show the glowing live green pulse */
   }
 
-  /* Full-width search bar on row 2 */
+  .header-actions {
+    grid-area: actions;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .live-refresh-pill {
+    padding: 4px 7px;
+    font-size: 0.74rem;
+    gap: 4px;
+  }
+  .live-refresh-label {
+    display: none;
+  }
+
+  #openGlossaryBtn {
+    display: none; /* Keep primary actions clear on mobile */
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .btn-primary {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .add-btn-text {
+    display: none;
+  }
+
+  /* Row 2: Search bar full width */
   .header-center-search {
-    order: 3;
+    grid-area: search;
     width: 100%;
     max-width: 100%;
     margin-top: 2px;
   }
 
   .search-input {
-    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
-    padding: 10px 14px 10px 38px;
-    border-radius: var(--radius-md);
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    padding: 9px 12px 9px 36px;
   }
 
-  .header-actions {
-    gap: 6px;
-    margin-left: auto;
-  }
-
-  .live-refresh-pill {
-    padding: 6px 8px;
-  }
-  .live-refresh-pill span {
-    display: none; /* Icon only on mobile */
-  }
-
-  .btn-icon {
-    width: 34px;
-    height: 34px;
-  }
-
-  .btn-primary {
-    padding: 7px 12px;
-    font-size: 0.8rem;
-    gap: 4px;
-  }
-
-  /* Sub-Navbar (View switcher) */
+  /* Sub-Navbar: Sticky at top (top: 0) as user scrolls */
   .sub-navbar {
+    position: sticky;
     top: 0;
+    z-index: 95;
+    background-color: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
   }
 
   .sub-navbar-container {
-    padding: 0 10px;
-  }
-
-  .nav-tabs-group {
-    gap: 4px;
-  }
-
-  .nav-tab-btn {
-    padding: 11px 12px;
-    font-size: 0.78rem;
-    gap: 6px;
+    padding: 0 4px;
+    overflow-x: visible;
   }
 
   .nav-quick-info {
-    display: none; /* Hide on mobile so tabs take center stage */
+    display: none;
   }
 
-  /* Dashboard controls */
+  .nav-tabs-group {
+    display: flex;
+    width: 100%;
+    gap: 2px;
+  }
+
+  .nav-tab-btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 10px 4px;
+    font-size: 0.74rem;
+    gap: 4px;
+    border-bottom-width: 2px;
+  }
+
+  .nav-tab-btn i {
+    font-size: 0.8rem;
+  }
+
+  /* Main Container */
+  .main-container {
+    padding: 12px 10px;
+  }
+
+  /* Watchlist Controls */
   .watchlist-controls-card {
-    padding: 12px 14px;
-    gap: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .category-tabs {
-    width: 100%;
-    overflow-x: auto;
+    display: flex;
     flex-wrap: nowrap;
-    padding-bottom: 4px;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding-bottom: 2px;
+    width: 100%;
     scrollbar-width: none;
   }
   .category-tabs::-webkit-scrollbar {
     display: none;
   }
 
-  .tab-btn {
-    white-space: nowrap;
-    padding: 6px 12px;
-    font-size: 0.78rem;
+  .category-tabs .tab-btn {
     flex-shrink: 0;
+    white-space: nowrap;
+    padding: 6px 10px;
+    font-size: 0.78rem;
   }
 
   .controls-right {
     width: 100%;
-    justify-content: space-between;
   }
 
   .select-sort {
-    flex: 1;
-    font-size: 16px; /* iOS zoom prevention */
+    width: 100%;
+    font-size: 16px;
     padding: 8px 10px;
   }
 
   /* Portfolio Summary Bar */
   .portfolio-summary-bar {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
 
   .summary-card {
-    padding: 10px 14px;
+    padding: 10px 12px;
   }
-
+  .summary-card-title {
+    font-size: 0.68rem;
+  }
   .summary-card-val {
     font-size: 1.15rem;
   }
 
-  /* Stock cards */
+  /* Stock Cards Grid */
   .stocks-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   .stock-card {
     padding: 14px;
-    gap: 12px;
-  }
-
-  .card-footer {
-    flex-direction: column;
-    align-items: flex-start;
     gap: 10px;
   }
 
-  .card-footer > div:last-child {
-    width: 100%;
+  .stock-name {
+    max-width: none;
+  }
+
+  .price-main {
+    font-size: 1.55rem;
+  }
+
+  .card-footer {
     display: flex;
+    flex-direction: row;
+    align-items: center;
     justify-content: space-between;
+    padding-top: 10px;
     gap: 6px;
   }
 
-  .card-action-btn {
-    flex: 1;
-    text-align: center;
-    padding: 8px 4px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-sm);
-    font-size: 0.78rem;
+  .card-volume {
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .card-footer > div:last-child {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 4px;
   }
 
-  /* News feed on mobile */
+  .card-action-btn {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+  }
+
+  /* News Section */
   .news-section {
-    padding: 16px 14px;
-    margin-top: 10px;
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow-y: visible;
+    padding: 14px;
+    margin-top: 14px;
   }
 
   .news-filters {
-    overflow-x: auto;
+    display: flex;
     flex-wrap: nowrap;
-    padding-bottom: 4px;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding-bottom: 4px;
     scrollbar-width: none;
   }
   .news-filters::-webkit-scrollbar {
@@ -2277,10 +2333,10 @@ button, a, input, select {
   }
 
   .news-pill-btn {
-    white-space: nowrap;
-    padding: 6px 12px;
-    font-size: 0.75rem;
     flex-shrink: 0;
+    white-space: nowrap;
+    padding: 6px 10px;
+    font-size: 0.74rem;
   }
 
   .news-source-filter-row select {
@@ -2291,52 +2347,51 @@ button, a, input, select {
   .heatmap-header-bar {
     flex-direction: column;
     align-items: flex-start;
-    padding: 14px;
+    padding: 12px 14px;
     gap: 10px;
   }
 
   .heatmap-sectors-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 
   .sector-tiles-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
     gap: 6px;
   }
 
   .heatmap-tile {
+    min-height: 68px;
     padding: 8px 4px;
-    min-height: 70px;
   }
   .tile-sym {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
   .tile-price {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
   }
   .tile-pct {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     padding: 1px 4px;
   }
 
   /* Portfolio View */
   .portfolio-header-box {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
 
   .portfolio-kpi-card {
-    padding: 12px 14px;
+    padding: 12px;
   }
-
   .kpi-val {
     font-size: 1.25rem;
   }
 
   .portfolio-actions-bar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 10px;
   }
 
@@ -2346,9 +2401,18 @@ button, a, input, select {
     justify-content: space-between;
   }
 
+  .portfolio-table-box {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .portfolio-table {
+    min-width: 520px;
+  }
   .portfolio-table th,
   .portfolio-table td {
-    padding: 10px 10px;
+    padding: 10px 8px;
     font-size: 0.78rem;
     white-space: nowrap;
   }
@@ -2356,7 +2420,7 @@ button, a, input, select {
   /* Calendar View */
   .calendar-layout {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
 
   .calendar-card {
@@ -2364,74 +2428,31 @@ button, a, input, select {
   }
 
   .earnings-item-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .earnings-item-card > div:last-child {
-    width: 100%;
-    display: flex;
-    align-items: center;
+    padding: 12px;
+    gap: 8px;
+    flex-direction: row;
     justify-content: space-between;
+    align-items: center;
   }
 }
 
-/* Small Smartphone Breakpoint (<= 480px) */
-@media (max-width: 480px) {
-  .brand-text h1 {
-    font-size: 1rem;
-  }
-  .brand-tag {
-    display: none;
-  }
-  .market-status-pill span {
-    display: none;
-  }
-  .market-status-pill {
-    padding: 6px;
-    border-radius: 50%;
-  }
-
-  /* "+ Añadir Acción" becomes "+ Acción" */
-  #openAddModalBtn {
-    padding: 6px 10px;
-    font-size: 0.78rem;
-  }
-
-  /* Sector tiles 3 columns */
-  .sector-tiles-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-  }
-
-  .heatmap-tile {
-    min-height: 64px;
-    padding: 6px 3px;
-  }
-  .tile-sym {
-    font-size: 0.88rem;
-  }
-  .tile-price {
-    font-size: 0.68rem;
-  }
-  .tile-pct {
-    font-size: 0.7rem;
-  }
-}
-
-/* Bottom Sheet Modals on Mobile Devices (<= 640px) */
+/* ========================================================
+   BOTTOM SHEET MODALS (<= 640px)
+   ======================================================== */
 @media (max-width: 640px) {
   .modal-overlay {
     padding: 0;
-    align-items: flex-end; /* Slides up like a native mobile bottom sheet */
+    align-items: flex-end;
   }
 
   .modal-container {
-    max-height: 90vh;
+    width: 100%;
+    max-width: 100%;
+    max-height: 88vh;
     border-radius: 20px 20px 0 0;
     border-bottom: none;
-    animation: modal-slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    margin: 0;
+    animation: modal-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes modal-slide-up {
@@ -2458,8 +2479,11 @@ button, a, input, select {
   }
 
   .modal-body {
-    padding: 16px 14px 28px;
-    gap: 14px;
+    padding: 14px 14px 24px;
+    gap: 12px;
+    max-height: calc(88vh - 65px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .modal-chart-canvas-box {
@@ -2499,7 +2523,6 @@ button, a, input, select {
     gap: 8px;
   }
 
-  /* Form inputs in modals */
   #addTradeForm .search-input,
   #alertsModal .search-input,
   #alertsModal select {
@@ -2510,7 +2533,6 @@ button, a, input, select {
     grid-template-columns: 1fr;
   }
 
-  /* Toast notification on mobile */
   .toast-container {
     left: 12px;
     right: 12px;

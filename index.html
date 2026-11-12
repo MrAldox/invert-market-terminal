@@ -93,9 +93,9 @@
         <!-- Live Refresh Countdown -->
         <div class="live-refresh-pill" title="Actualización automática de precios">
           <i class="fa-solid fa-bolt" style="color: var(--color-accent);"></i>
-          <span>Auto:</span>
+          <span class="live-refresh-label">Auto:</span>
           <span class="refresh-timer" id="refreshTimer">10s</span>
-          <button id="toggleAutoRefreshBtn" class="btn-icon" style="width:24px; height:24px; border:none;" title="Pausar / Reanudar">
+          <button id="toggleAutoRefreshBtn" class="btn-icon" style="width:22px; height:22px; border:none;" title="Pausar / Reanudar">
             <i class="fa-solid fa-pause" id="refreshPlayPauseIcon"></i>
           </button>
         </div>
@@ -123,7 +123,7 @@
 
         <!-- Add Stock Button -->
         <button id="openAddModalBtn" class="btn-primary">
-          <i class="fa-solid fa-plus"></i> Añadir Acción
+          <i class="fa-solid fa-plus"></i> <span class="add-btn-text">Añadir Acción</span>
         </button>
       </div>
     </div>
@@ -135,19 +135,23 @@
       <div class="nav-tabs-group">
         <button class="nav-tab-btn active" data-view="dashboard" id="navViewDashboard">
           <i class="fa-solid fa-chart-simple"></i>
-          <span>Dashboard en Vivo</span>
+          <span class="nav-label-long">Dashboard en Vivo</span>
+          <span class="nav-label-short">Dashboard</span>
         </button>
         <button class="nav-tab-btn" data-view="heatmap" id="navViewHeatmap">
           <i class="fa-solid fa-fire-flame-curved" style="color: #f97316;"></i>
-          <span>Mapa de Calor (S&P 500)</span>
+          <span class="nav-label-long">Mapa de Calor (S&P 500)</span>
+          <span class="nav-label-short">Heatmap</span>
         </button>
         <button class="nav-tab-btn" data-view="portfolio" id="navViewPortfolio">
           <i class="fa-solid fa-briefcase" style="color: #38bdf8;"></i>
-          <span>Mi Portafolio (P&L en Vivo)</span>
+          <span class="nav-label-long">Mi Portafolio (P&L en Vivo)</span>
+          <span class="nav-label-short">Portafolio</span>
         </button>
         <button class="nav-tab-btn" data-view="calendar" id="navViewCalendar">
           <i class="fa-solid fa-calendar-days" style="color: #a855f7;"></i>
-          <span>Calendario & Earnings</span>
+          <span class="nav-label-long">Calendario & Earnings</span>
+          <span class="nav-label-short">Calendario</span>
         </button>
       </div>
 
