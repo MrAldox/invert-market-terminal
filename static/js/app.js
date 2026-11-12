@@ -218,6 +218,16 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   renderAlertsList();
   renderCalendarView();
+
+  // Instant First-Paint: Si no hay cache, poblar inmediatamente para cero espera visual
+  if (Object.keys(State.quotesData).length === 0) {
+    const initial = MockMarket.generateQuotes(StockPresets.all);
+    initial.forEach(q => { State.quotesData[q.symbol] = q; });
+  }
+  renderStockCards();
+  renderPortfolioSummary();
+
+  // Cargar datos en vivo del backend y arrancar auto-refresh
   loadData();
   startAutoRefresh();
 });
