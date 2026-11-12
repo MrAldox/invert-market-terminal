@@ -111,8 +111,8 @@ const ChartEngine = {
 
       const padTop = 30;
       const padBottom = 40;
-      const padRight = 75;
-      const padLeft = 15;
+      const padRight = width < 500 ? 55 : 75;
+      const padLeft = width < 500 ? 10 : 15;
 
       const chartW = width - padLeft - padRight;
       const chartH = height - padTop - padBottom;
@@ -237,8 +237,9 @@ const ChartEngine = {
         const tipText3 = dateStr;
 
         ctx.font = 'bold 12px Inter, sans-serif';
-        const boxW = 160;
-        const boxH = 65;
+        const isSmallScreen = width < 500;
+        const boxW = isSmallScreen ? 135 : 160;
+        const boxH = isSmallScreen ? 56 : 65;
         let boxX = target.x - boxW / 2;
         if (boxX < padLeft) boxX = padLeft;
         if (boxX + boxW > padLeft + chartW) boxX = padLeft + chartW - boxW;
@@ -256,34 +257,38 @@ const ChartEngine = {
         // Tooltip Text
         ctx.textAlign = 'left';
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px monospace';
-        ctx.fillText(tipText1, boxX + 10, boxY + 20);
+        ctx.font = isSmallScreen ? 'bold 12px monospace' : 'bold 14px monospace';
+        ctx.fillText(tipText1, boxX + 8, boxY + (isSmallScreen ? 16 : 20));
 
         ctx.fillStyle = chg >= 0 ? '#34d399' : '#f87171';
-        ctx.font = '600 11px monospace';
-        ctx.fillText(tipText2, boxX + 10, boxY + 38);
+        ctx.font = isSmallScreen ? '600 10px monospace' : '600 11px monospace';
+        ctx.fillText(tipText2, boxX + 8, boxY + (isSmallScreen ? 32 : 38));
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '10px Inter, sans-serif';
-        ctx.fillText(tipText3, boxX + 10, boxY + 54);
+        ctx.font = isSmallScreen ? '9px Inter, sans-serif' : '10px Inter, sans-serif';
+        ctx.fillText(tipText3, boxX + 8, boxY + (isSmallScreen ? 47 : 54));
       }
     };
 
     draw();
 
-    // Mouse event listeners for hover interaction
+    // Mouse and Touch event listeners for seamless desktop & mobile drag interaction
     if (!canvas._hasChartEvents) {
-      canvas.addEventListener('mousemove', (e) => {
+      const updateHoverAtX = (clientX) => {
         if (!this._activeChart) return;
         const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const padLeft = 15;
-        const padRight = 75;
-        const chartW = rect.width - padLeft - padRight;
-        const frac = Math.max(0, Math.min(1, (mouseX - padLeft) / chartW));
+        const posX = clientX - rect.left;
+        const padL = rect.width < 500 ? 10 : 15;
+        const padR = rect.width < 500 ? 55 : 75;
+        const chartW = rect.width - padL - padR;
+        const frac = Math.max(0, Math.min(1, (posX - padL) / chartW));
         const idx = Math.round(frac * (this._activeChart.points.length - 1));
         this._activeChart.hoverIdx = idx;
         draw();
+      };
+
+      canvas.addEventListener('mousemove', (e) => {
+        updateHoverAtX(e.clientX);
       });
 
       canvas.addEventListener('mouseleave', () => {
@@ -292,6 +297,27 @@ const ChartEngine = {
           draw();
         }
       });
+
+      // Mobile Touch Dragging Support
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          updateHoverAtX(e.touches[0].clientX);
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          updateHoverAtX(e.touches[0].clientX);
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchend', () => {
+        if (this._activeChart) {
+          this._activeChart.hoverIdx = null;
+          draw();
+        }
+      });
+
       canvas._hasChartEvents = true;
     }
   }

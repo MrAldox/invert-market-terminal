@@ -257,6 +257,15 @@ function setupEventListeners() {
     });
   });
 
+  // Responsive redraw on mobile device rotation or screen resize
+  window.addEventListener('resize', debounce(() => {
+    if (State.activeMainView === 'dashboard') {
+      renderStockCards();
+    } else if (State.activeMainView === 'heatmap') {
+      renderHeatmap();
+    }
+  }, 250));
+
   // Category Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
