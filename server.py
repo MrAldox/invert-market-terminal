@@ -454,7 +454,20 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if not os.path.exists(static_dir):
     os.makedirs(static_dir, exist_ok=True)
 
+css_dir = os.path.join(static_dir, "css")
+js_dir = os.path.join(static_dir, "js")
+
+if os.path.exists(css_dir):
+    app.mount("/css", StaticFiles(directory=css_dir), name="css")
+if os.path.exists(js_dir):
+    app.mount("/js", StaticFiles(directory=js_dir), name="js")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+from fastapi.responses import Response
+
+@app.get("/favicon.ico")
+def favicon():
+    return Response(status_code=204)
 
 @app.get("/")
 def serve_index():
@@ -462,6 +475,7 @@ def serve_index():
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return {"message": "Servidor INVERT activo. Coloque index.html en static/"}
+
 
 if __name__ == "__main__":
     import sys
