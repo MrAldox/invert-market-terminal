@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INVERT · Terminal Bursátil en Tiempo Real & Noticias</title>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+  <!-- ================= TOP TICKER RIBBON ================= -->
+  <div class="top-ticker-bar">
+    <div class="ticker-tape-wrapper" id="tickerTapeWrapper">
+      <div class="ticker-index-item">
+        <span class="ticker-index-name">S&P 500</span>
+        <span class="ticker-index-price">$5,983.20</span>
+        <span class="badge-pct badge-green">+0.42% ▲</span>
+      </div>
+      <div class="ticker-index-item">
+        <span class="ticker-index-name">NASDAQ</span>
+        <span class="ticker-index-price">$19,280.10</span>
+        <span class="badge-pct badge-green">+0.85% ▲</span>
+      </div>
+      <div class="ticker-index-item">
+        <span class="ticker-index-name">DOW JONES</span>
+        <span class="ticker-index-price">$43,910.45</span>
+        <span class="badge-pct badge-red">-0.18% ▼</span>
+      </div>
+      <div class="ticker-index-item">
+        <span class="ticker-index-name">BITCOIN</span>
+        <span class="ticker-index-price">$88,450.00</span>
+        <span class="badge-pct badge-green">+3.80% ▲</span>
+      </div>
+      <div class="ticker-index-item">
+        <span class="ticker-index-name">ORO (Gold)</span>
+        <span class="ticker-index-price">$2,685.20</span>
+        <span class="badge-pct badge-green">+0.25% ▲</span>
+      </div>
+      <div class="ticker-index-item">
+        <span class="ticker-index-name">PETRÓLEO WTI</span>
+        <span class="ticker-index-price">$68.40</span>
+        <span class="badge-pct badge-red">-1.15% ▼</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN HEADER ================= -->
+  <header class="app-header">
+    <div class="header-inner">
+      <!-- Brand & Status -->
+      <div class="brand-section">
+        <div class="logo-badge">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div class="brand-text">
+          <h1>
+            INVERT <span class="brand-tag">PRO TERMINAL</span>
+          </h1>
+        </div>
+        <div class="market-status-pill">
+          <div class="status-dot"></div>
+          <span id="marketStatusText">MERCADO EN VIVO · NYSE / NASDAQ</span>
+        </div>
+      </div>
+
+      <!-- Center Search -->
+      <div class="header-center-search">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input 
+            type="text" 
+            id="globalSearchInput" 
+            class="search-input" 
+            placeholder="Buscar acción o empresa (ej: AAPL, Nvidia, Tesla, Meta)..." 
+            autocomplete="off"
+          >
+        </div>
+        <div class="search-results-dropdown" id="searchResultsDropdown"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="header-actions">
+        <!-- Live Refresh Countdown -->
+        <div class="live-refresh-pill" title="Actualización automática de precios">
+          <i class="fa-solid fa-bolt" style="color: var(--color-accent);"></i>
+          <span>Auto:</span>
+          <span class="refresh-timer" id="refreshTimer">10s</span>
+          <button id="toggleAutoRefreshBtn" class="btn-icon" style="width:24px; height:24px; border:none;" title="Pausar / Reanudar">
+            <i class="fa-solid fa-pause" id="refreshPlayPauseIcon"></i>
+          </button>
+        </div>
+
+        <!-- Manual refresh button -->
+        <button id="manualRefreshBtn" class="btn-icon" title="Actualizar datos ahora">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+
+        <!-- Beginner Glossary Button -->
+        <button id="openGlossaryBtn" class="btn-icon" title="Glosario y Guía para principiantes">
+          <i class="fa-solid fa-circle-question"></i>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="themeToggleBtn" class="btn-icon" title="Cambiar Tema Oscuro / Claro">
+          <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+
+        <!-- Add Stock Button -->
+        <button id="openAddModalBtn" class="btn-primary">
+          <i class="fa-solid fa-plus"></i> Añadir Acción
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN DASHBOARD CONTAINER ================= -->
+  <main class="main-container">
+    <div class="dashboard-layout">
+
+      <!-- ================= LEFT COLUMN: STOCKS & WATCHLIST ================= -->
+      <section class="stocks-section">
+        
+        <!-- Controls & Category Tabs -->
+        <div class="watchlist-controls-card">
+          <div class="category-tabs">
+            <button class="tab-btn active" data-category="my_watchlist" id="tabMyWatchlist">
+              <i class="fa-solid fa-star" style="color: var(--color-yellow);"></i>
+              Mi Watchlist
+              <span class="tab-count" id="countMyWatchlist">0</span>
+            </button>
+            <button class="tab-btn" data-category="tech">
+              <i class="fa-solid fa-microchip"></i>
+              Tech & Mag 7
+              <span class="tab-count">7</span>
+            </button>
+            <button class="tab-btn tab-green" data-category="gainers">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+              Ganadoras (+)
+            </button>
+            <button class="tab-btn tab-red" data-category="losers">
+              <i class="fa-solid fa-arrow-trend-down"></i>
+              Perdedoras (-)
+            </button>
+            <button class="tab-btn" data-category="all">
+              <i class="fa-solid fa-list-check"></i>
+              Todas
+            </button>
+          </div>
+
+          <div class="controls-right">
+            <label for="sortSelect" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Ordenar:</label>
+            <select id="sortSelect" class="select-sort">
+              <option value="changeDesc">Mayor Ganancia % (▲)</option>
+              <option value="changeAsc">Mayor Pérdida % (▼)</option>
+              <option value="priceDesc">Mayor Precio ($)</option>
+              <option value="symbolAsc">Símbolo (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Portfolio Health & Performance Summary Bar -->
+        <div class="portfolio-summary-bar">
+          <div class="summary-card">
+            <span class="summary-card-title">Acciones Visualizadas</span>
+            <span class="summary-card-val" id="summaryTotalStocks">0</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-card-title">Rendimiento Promedio</span>
+            <span class="summary-card-val num" id="summaryAvgPerformance">+0.00%</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-card-title">En Verde (Subiendo)</span>
+            <span class="summary-card-val" style="color: var(--color-green-text);" id="summaryGreenCount">0 ▲</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-card-title">En Rojo (Bajando)</span>
+            <span class="summary-card-val" style="color: var(--color-red-text);" id="summaryRedCount">0 ▼</span>
+          </div>
+        </div>
+
+        <!-- Stock Cards Grid -->
+        <div class="stocks-grid" id="stocksGrid">
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <i class="fa-solid fa-spinner fa-spin empty-icon"></i>
+            <p>Cargando cotizaciones bursátiles en tiempo real...</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= RIGHT COLUMN: NEWS FEED ================= -->
+      <aside class="news-section">
+        <div class="news-header-box">
+          <div class="news-title-row">
+            <h2>
+              <i class="fa-solid fa-newspaper" style="color: var(--color-accent);"></i>
+              Noticias del Mercado
+            </h2>
+            <div class="badge-live-stream">
+              <span class="status-dot" style="background:#ef4444; box-shadow:0 0 6px #ef4444;"></span>
+              EN VIVO
+            </div>
+          </div>
+          <p class="news-subtitle">Lo último que más mueve el precio de cada acción</p>
+          
+          <!-- News Filter Pills -->
+          <div class="news-filters">
+            <button class="news-pill-btn active" data-news-filter="all">Todas</button>
+            <button class="news-pill-btn" data-news-filter="positive">🟢 Alcistas (+)</button>
+            <button class="news-pill-btn" data-news-filter="negative">🔴 Bajistas (-)</button>
+            <button class="news-pill-btn" data-news-filter="breaking">⚡ Breaking</button>
+          </div>
+
+          <!-- Active Stock Filter Notice -->
+          <div class="active-stock-filter-box" id="activeStockFilterBox" style="display: none;">
+            <span>Filtrando noticias para: <strong id="activeFilteredStockTag">NVDA</strong></span>
+            <button class="clear-filter-btn" id="clearStockFilterBtn">✕ Quitar filtro</button>
+          </div>
+        </div>
+
+        <!-- News Cards Container -->
+        <div class="news-list" id="newsList">
+          <div class="empty-state">
+            <i class="fa-solid fa-spinner fa-spin empty-icon"></i>
+            <p>Obteniendo últimas noticias del mercado...</p>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ================= MODAL: DETAILED CHART & ANALYTICS ================= -->
+  <div class="modal-overlay" id="chartModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 id="modalStockTitle">NVIDIA Corporation (NVDA)</h3>
+          <span class="badge-pct" id="modalStockBadge">+2.45% ▲</span>
+        </div>
+        <button class="modal-close-btn" id="closeChartModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="chart-controls-bar">
+          <div>
+            <span style="font-size: 1.85rem; font-weight: 800; font-family: var(--font-mono);" id="modalStockPrice">$173.50</span>
+            <span style="font-size: 0.85rem; margin-left: 8px; font-weight: 600;" id="modalStockDollarChange">+$4.15</span>
+          </div>
+
+          <div class="timeframe-group">
+            <button class="tf-btn active" data-range="1d">1D</button>
+            <button class="tf-btn" data-range="5d">5D</button>
+            <button class="tf-btn" data-range="1mo">1M</button>
+            <button class="tf-btn" data-range="6mo">6M</button>
+            <button class="tf-btn" data-range="1y">1Y</button>
+          </div>
+        </div>
+
+        <div class="modal-chart-canvas-box">
+          <canvas id="interactiveCanvas"></canvas>
+        </div>
+
+        <div class="modal-stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Rango Hoy (Low - High)</span>
+            <span class="stat-value" id="modalStatRange">$168.20 - $174.50</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Cierre Anterior</span>
+            <span class="stat-value" id="modalStatPrevClose">$169.35</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Rango 52 Semanas</span>
+            <span class="stat-value" id="modalStat52Week">$75.60 - $178.40</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Volumen Regular</span>
+            <span class="stat-value" id="modalStatVolume">42.5M</span>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 14px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-bolt" style="color: var(--color-accent);"></i>
+            Noticias que afectan directamente a esta acción
+          </h4>
+          <div id="modalStockNewsContainer" class="news-list" style="max-height: 220px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD STOCKS TO WATCHLIST ================= -->
+  <div class="modal-overlay" id="addStockModal">
+    <div class="modal-container" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-plus-circle" style="color: var(--color-accent);"></i> Añadir Acción a tu Watchlist</h3>
+        <button class="modal-close-btn" id="closeAddModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.84rem; color: var(--text-secondary);">
+          Elige qué acciones quieres seguir en tu pantalla. Puedes buscar por ticker oficial o empresa:
+        </p>
+
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input 
+            type="text" 
+            id="modalSearchInput" 
+            class="search-input" 
+            placeholder="Escribe el símbolo (ej: AMD, COIN, PLTR, BABA)..."
+          >
+        </div>
+
+        <div id="modalSearchResults" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;"></div>
+
+        <div>
+          <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 8px;">
+            Acciones Populares Recomendadas
+          </h4>
+          <div class="shortcuts-grid">
+            <div class="shortcut-btn" data-add-sym="NVDA">
+              <span class="shortcut-sym">NVDA</span>
+              <span class="shortcut-name">NVIDIA Corp.</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="AAPL">
+              <span class="shortcut-sym">AAPL</span>
+              <span class="shortcut-name">Apple Inc.</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="TSLA">
+              <span class="shortcut-sym">TSLA</span>
+              <span class="shortcut-name">Tesla, Inc.</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="MSFT">
+              <span class="shortcut-sym">MSFT</span>
+              <span class="shortcut-name">Microsoft Corp.</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="AMZN">
+              <span class="shortcut-sym">AMZN</span>
+              <span class="shortcut-name">Amazon.com</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="META">
+              <span class="shortcut-sym">META</span>
+              <span class="shortcut-name">Meta Platforms</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="PLTR">
+              <span class="shortcut-sym">PLTR</span>
+              <span class="shortcut-name">Palantir Tech</span>
+            </div>
+            <div class="shortcut-btn" data-add-sym="COIN">
+              <span class="shortcut-sym">COIN</span>
+              <span class="shortcut-name">Coinbase Global</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: GLOSSARY & HELP ================= -->
+  <div class="modal-overlay" id="glossaryModal">
+    <div class="modal-container" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-book-open" style="color: var(--color-accent);"></i> Glosario Rápido para Inversionistas</h3>
+        <button class="modal-close-btn" id="closeGlossaryModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="glossary-item green">
+          <h4>🟢 Porcentaje Verde (+%)</h4>
+          <p>Indica que el precio actual de la acción ha <strong>subido</strong> respecto al precio de cierre del día anterior. Señala ganancias intradía y tendencia compradora.</p>
+        </div>
+
+        <div class="glossary-item red">
+          <h4>🔴 Porcentaje Rojo (-%)</h4>
+          <p>Indica que el precio actual ha <strong>bajado</strong> respecto al precio de cierre previo. Señala corrección de precio o presión vendedora en el mercado.</p>
+        </div>
+
+        <div class="glossary-item">
+          <h4>📰 Impacto de Noticias (NEWS)</h4>
+          <p>Cada noticia pasa por un análisis de sentimiento bursátil:
+            <br>• <strong>🟢 Alcista:</strong> Contratos, récord de ingresos, alzas de precio objetivo o avances de IA.
+            <br>• <strong>🔴 Bajista:</strong> Demandas, reducción de márgenes, despidos o investigaciones regulatorias.
+            <br>• <strong>🟡 Macro:</strong> Declaraciones de la Reserva Federal (tasas de interés), inflación o reportes de empleo.
+          </p>
+        </div>
+
+        <div class="glossary-item">
+          <h4>📊 Volumen y Rango Diario</h4>
+          <p><strong>Volumen:</strong> Cantidad de títulos o acciones intercambiadas hoy. Un volumen alto en verde confirma fortaleza del movimiento.
+            <br><strong>Rango 52 Semanas:</strong> Muestra el mínimo y máximo al que ha cotizado la acción en el último año.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    INVERT Market Terminal Pro &bull; Datos bursátiles con cotizaciones en tiempo real y análisis de noticias de mercado &bull; Diseñado para alta precisión financiera.
+  </footer>
+
+  <!-- Scripts -->
+  <script src="static/js/chart.js"></script>
+  <script src="static/js/app.js"></script>
+</body>
+</html>

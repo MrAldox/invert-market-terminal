@@ -1,0 +1,8 @@
+# Configuración para despliegue en Netlify
+[build]
+  publish = "static"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
