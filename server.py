@@ -293,6 +293,195 @@ def get_chart(symbol: str = Query(...), range_val: str = Query(default="1d"), in
     return data
 
 
+@app.get("/api/analysis")
+def get_analysis(symbol: str = Query(...), timeframe: str = Query(default="1d")):
+    """
+    Motor de Análisis Predictivo Cuantitativo y Sentimiento en Tiempo Real.
+    Calcula RSI (14), Medias Móviles, Pivot Points (Soporte/Resistencia),
+    Sentimiento de Noticias y genera proyecciones probabilísticas con objetivos de precio.
+    """
+    sym = symbol.upper().strip()
+    valid_configs = {
+        "1d": ("1d", "5m", "Hoy (Intradía)"),
+        "1w": ("5d", "15m", "Esta Semana (Swing)"),
+        "1m": ("1mo", "1d", "Este Mes (Posicional)")
+    }
+    range_val, interval_val, label = valid_configs.get(timeframe, ("1d", "5m", "Hoy (Intradía)"))
+    
+    chart_data = fetch_symbol_chart(sym, range_val=range_val, interval=interval_val)
+    if not chart_data:
+        raise HTTPException(status_code=404, detail="Datos no disponibles para el símbolo")
+        
+    points = chart_data.get("history", [])
+    closes = [p["close"] for p in points if p.get("close") is not None]
+    highs = [p.get("high", p["close"]) for p in points if p.get("high") is not None]
+    lows = [p.get("low", p["close"]) for p in points if p.get("low") is not None]
+    
+    price = chart_data.get("price", closes[-1] if closes else 100.0)
+    prev_close = chart_data.get("previousClose", price)
+    
+    # 1. Cálculo de RSI (14)
+    rsi = 50.0
+    if len(closes) >= 15:
+        deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+        gains = [d for d in deltas[-14:] if d > 0]
+        losses = [-d for d in deltas[-14:] if d < 0]
+        avg_gain = sum(gains) / 14 if gains else 0.0001
+        avg_loss = sum(losses) / 14 if losses else 0.0001
+        rs = avg_gain / avg_loss
+        rsi = round(100 - (100 / (1 + rs)), 1)
+        
+    if rsi < 30:
+        rsi_label = f"{rsi} · Sobreventa Extrema (Potencial Rebote)"
+    elif rsi > 70:
+        rsi_label = f"{rsi} · Sobrecompra Elevada (Riesgo Corrección)"
+    else:
+        rsi_label = f"{rsi} · Rango Equilibrado / Neutro"
+        
+    # 2. Medias Móviles (SMA 9 y SMA 21)
+    sma9 = round(sum(closes[-9:]) / 9, 2) if len(closes) >= 9 else price
+    sma21 = round(sum(closes[-21:]) / 21, 2) if len(closes) >= 21 else price
+    
+    if price > sma9 and sma9 > sma21:
+        trend_status = "Estructura Alcista (Precio > SMA9 > SMA21)"
+        sma_score = 0.4
+    elif price > sma9:
+        trend_status = "Moderadamente Alcista (Precio > SMA9)"
+        sma_score = 0.2
+    elif price < sma9 and sma9 < sma21:
+        trend_status = "Estructura Bajista (Precio < SMA9 < SMA21)"
+        sma_score = -0.4
+    else:
+        trend_status = "Rango de Consolidación Lateral"
+        sma_score = -0.1
+        
+    # 3. Soportes, Resistencias y Rango Objetivo
+    hp = max(highs[-25:]) if highs else price * 1.02
+    lp = min(lows[-25:]) if lows else price * 0.98
+    pivot = (hp + lp + price) / 3
+    resistance = round((2 * pivot) - lp, 2)
+    support = round((2 * pivot) - hp, 2)
+    
+    if resistance <= price: resistance = round(price * 1.025, 2)
+    if support >= price: support = round(price * 0.975, 2)
+    
+    # 4. Sentimiento de Noticias en Vivo
+    news_items = []
+    try:
+        news_items = get_news(symbols=sym, limit=8)
+    except Exception:
+        pass
+        
+    bull_count = sum(1 for n in news_items if n.get("sentiment") == "bullish")
+    bear_count = sum(1 for n in news_items if n.get("sentiment") == "bearish")
+    total_news = bull_count + bear_count
+    news_ratio = (bull_count - bear_count) / max(1, total_news) if total_news > 0 else 0.0
+    
+    if news_ratio >= 0.4:
+        news_label = f"Muy Favorable (+{int(news_ratio*100)}%)"
+    elif news_ratio > 0.0:
+        news_label = f"Favorable (+{int(news_ratio*100)}%)"
+    elif news_ratio <= -0.4:
+        news_label = f"Muy Negativo ({int(news_ratio*100)}% - Presión Bajista)"
+    elif news_ratio < 0.0:
+        news_label = f"Ligeramente Negativo ({int(news_ratio*100)}%)"
+    else:
+        news_label = "Neutral / Moderado"
+        
+    # 5. Puntuación Total (-100 a +100) y Veredicto
+    rsi_component = 0.0
+    if rsi < 30: rsi_component = 0.30
+    elif rsi > 70: rsi_component = -0.30
+    else: rsi_component = (rsi - 50) / 50 * 0.2
+    
+    composite = (sma_score * 0.45) + (news_ratio * 0.35) + (rsi_component * 0.20)
+    score = int(max(-100, min(100, composite * 100)))
+    gauge_position = int((score + 100) / 2)
+    
+    if score >= 35:
+        verdict = "COMPRA FUERTE"
+        badge = "🚀 Proyección Alcista Fuerte"
+        action = "COMPRAR / ACUMULAR"
+        color = "var(--color-green-text)"
+        target_price = round(price + (resistance - price) * 0.75, 2)
+        bullish_prob = min(88, 50 + int(score * 0.4))
+        bearish_prob = 100 - bullish_prob
+    elif score >= 10:
+        verdict = "COMPRA MODERADA"
+        badge = "🟢 Sesgo Alcista"
+        action = "MANTENER / ACUMULACIÓN"
+        color = "var(--color-green-text)"
+        target_price = round(price + (resistance - price) * 0.45, 2)
+        bullish_prob = min(68, 50 + int(score * 0.4))
+        bearish_prob = 100 - bullish_prob
+    elif score <= -35:
+        verdict = "VENTA FUERTE"
+        badge = "🚨 Presión Bajista Elevada"
+        action = "TOMAR GANANCIAS / VENDER"
+        color = "var(--color-red-text)"
+        target_price = round(price - (price - support) * 0.75, 2)
+        bearish_prob = min(88, 50 + int(abs(score) * 0.4))
+        bullish_prob = 100 - bearish_prob
+    elif score <= -10:
+        verdict = "VENTA MODERADA"
+        badge = "🔴 Sesgo Bajista"
+        action = "CAUTELA / ESPERAR SOPORTE"
+        color = "var(--color-red-text)"
+        target_price = round(price - (price - support) * 0.45, 2)
+        bearish_prob = min(68, 50 + int(abs(score) * 0.4))
+        bullish_prob = 100 - bearish_prob
+    else:
+        verdict = "NEUTRAL / RANGO"
+        badge = "🟡 Consolidación Lateral"
+        action = "OBSERVAR / ESPERAR CONFIRMACIÓN"
+        color = "var(--color-yellow)"
+        target_price = round(price, 2)
+        bullish_prob = 50
+        bearish_prob = 50
+
+    # 6. Explicación ejecutiva sintética en español
+    summary_parts = []
+    has_crisis = any(k in [n.get('title','').lower() for n in news_items] for k in ['oust', 'resign', 'fallout', 'probe'])
+    if has_crisis:
+        summary_parts.append("El activo absorbe volatilidad por noticias corporativas/directivas relevantes.")
+    if rsi < 30:
+        summary_parts.append(f"El RSI ({rsi}) está en sobreventa extrema, lo que estadísticamente suele abrir ventanas de rebote técnico.")
+    elif rsi > 70:
+        summary_parts.append(f"El RSI ({rsi}) está en sobrecompra alta; conviene cautela ante tomas de beneficios.")
+    else:
+        summary_parts.append(f"Oscilador RSI ({rsi}) en rango de equilibrio.")
+        
+    summary_parts.append(f"Tendencia: {trend_status}.")
+    summary_parts.append(f"Soporte técnico clave estimado en ${support} y techo de resistencia en ${resistance}.")
+    
+    return {
+        "symbol": sym,
+        "name": chart_data.get("name", sym),
+        "timeframe": timeframe,
+        "timeframeLabel": label,
+        "price": price,
+        "previousClose": prev_close,
+        "changePercent": chart_data.get("changePercent", 0.0),
+        "verdict": verdict,
+        "badge": badge,
+        "action": action,
+        "score": score,
+        "color": color,
+        "gaugePosition": gauge_position,
+        "bullishProbability": bullish_prob,
+        "bearishProbability": bearish_prob,
+        "supportPrice": support,
+        "targetPrice": target_price,
+        "resistancePrice": resistance,
+        "rsi": rsi,
+        "rsiStatus": rsi_label,
+        "smaTrend": trend_status,
+        "newsSentiment": news_label,
+        "summary": " ".join(summary_parts)
+    }
+
+
+
 @app.get("/api/news")
 def get_news(symbols: Optional[str] = Query(default=None), limit: int = Query(default=35)):
     """
