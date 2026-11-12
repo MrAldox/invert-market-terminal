@@ -105,6 +105,12 @@
           <i class="fa-solid fa-arrows-rotate"></i>
         </button>
 
+        <!-- Price Alerts Button -->
+        <button id="openAlertsModalBtn" class="btn-icon" title="Gestionar Alertas de Precio" style="position:relative;">
+          <i class="fa-solid fa-bell"></i>
+          <span class="alerts-badge-count" id="alertsBadgeCount" style="display:none;">0</span>
+        </button>
+
         <!-- Beginner Glossary Button -->
         <button id="openGlossaryBtn" class="btn-icon" title="Glosario y Guía para principiantes">
           <i class="fa-solid fa-circle-question"></i>
@@ -123,9 +129,40 @@
     </div>
   </header>
 
-  <!-- ================= MAIN DASHBOARD CONTAINER ================= -->
+  <!-- ================= SUB-NAVBAR & VIEW SWITCHER ================= -->
+  <nav class="sub-navbar">
+    <div class="sub-navbar-container">
+      <div class="nav-tabs-group">
+        <button class="nav-tab-btn active" data-view="dashboard" id="navViewDashboard">
+          <i class="fa-solid fa-chart-simple"></i>
+          <span>Dashboard en Vivo</span>
+        </button>
+        <button class="nav-tab-btn" data-view="heatmap" id="navViewHeatmap">
+          <i class="fa-solid fa-fire-flame-curved" style="color: #f97316;"></i>
+          <span>Mapa de Calor (S&P 500)</span>
+        </button>
+        <button class="nav-tab-btn" data-view="portfolio" id="navViewPortfolio">
+          <i class="fa-solid fa-briefcase" style="color: #38bdf8;"></i>
+          <span>Mi Portafolio (P&L en Vivo)</span>
+        </button>
+        <button class="nav-tab-btn" data-view="calendar" id="navViewCalendar">
+          <i class="fa-solid fa-calendar-days" style="color: #a855f7;"></i>
+          <span>Calendario & Earnings</span>
+        </button>
+      </div>
+
+      <div class="nav-quick-info">
+        <span class="live-pulse-badge"><span class="status-dot"></span> Sincronizado en tiempo real</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN CONTAINER ================= -->
   <main class="main-container">
-    <div class="dashboard-layout">
+
+    <!-- ================= VIEW 1: DASHBOARD (WATCHLIST & NEWS) ================= -->
+    <div class="view-container active" id="viewDashboard">
+      <div class="dashboard-layout">
 
       <!-- ================= LEFT COLUMN: STOCKS & WATCHLIST ================= -->
       <section class="stocks-section">
@@ -253,8 +290,140 @@
           </div>
         </div>
       </aside>
-
+      </div>
     </div>
+
+    <!-- ================= VIEW 2: HEATMAP (S&P 500) ================= -->
+    <div class="view-container" id="viewHeatmap">
+      <div class="heatmap-header-bar">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-fire-flame-curved" style="color: #f97316;"></i>
+            Mapa de Calor del Mercado (S&P 500 & Wall Street)
+          </h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 3px;">
+            Rendimiento visual de las principales empresas agrupadas por sectores en tiempo real.
+          </p>
+        </div>
+
+        <div class="heatmap-legend">
+          <span>Rendimiento:</span>
+          <div class="legend-bar">
+            <div class="legend-step" style="background:#991b1b;" title="-3% o menos"></div>
+            <div class="legend-step" style="background:#dc2626;" title="-2%"></div>
+            <div class="legend-step" style="background:#f87171;" title="-1%"></div>
+            <div class="legend-step" style="background:#475569;" title="0%"></div>
+            <div class="legend-step" style="background:#34d399;" title="+1%"></div>
+            <div class="legend-step" style="background:#10b981;" title="+2%"></div>
+            <div class="legend-step" style="background:#047857;" title="+3% o más"></div>
+          </div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">-3% a +3%</span>
+        </div>
+      </div>
+
+      <div class="heatmap-sectors-grid" id="heatmapSectorsContainer">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- ================= VIEW 3: PORTFOLIO (PAPER TRADING P&L) ================= -->
+    <div class="view-container" id="viewPortfolio">
+      <!-- KPI Metrics Header -->
+      <div class="portfolio-header-box">
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-wallet" style="color: var(--color-accent);"></i> Valor Total Cartera</span>
+          <span class="kpi-val" id="portfolioTotalValue">$10,000.00</span>
+          <span class="kpi-sub" style="color: var(--text-muted);">Acciones + Efectivo</span>
+        </div>
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-chart-line"></i> Ganancia / Pérdida Total</span>
+          <span class="kpi-val" id="portfolioTotalPL">$0.00</span>
+          <span class="kpi-sub" id="portfolioTotalPLPct">+0.00%</span>
+        </div>
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Rendimiento Diario (Hoy)</span>
+          <span class="kpi-val" id="portfolioDayPL">$0.00</span>
+          <span class="kpi-sub" id="portfolioDayPLPct">+0.00%</span>
+        </div>
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-piggy-bank" style="color: #10b981;"></i> Efectivo Disponible</span>
+          <span class="kpi-val" id="portfolioCashBalance">$10,000.00</span>
+          <span class="kpi-sub" style="color: var(--color-green-text);">Poder de Compra</span>
+        </div>
+      </div>
+
+      <!-- Portfolio Actions Bar -->
+      <div class="portfolio-actions-bar">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h3 style="font-size: 1.1rem; font-weight: 800;">Posiciones Abiertas</h3>
+          <span class="badge-pct badge-green" id="portfolioOpenPositionsBadge" style="font-size: 0.75rem;">0 Posiciones</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-primary" id="openAddTradeModalBtn" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-plus"></i> + Añadir Compra / Simular Posición
+          </button>
+          <button class="btn-icon" id="resetPortfolioBtn" title="Restablecer Portafolio a $10,000 iniciales" style="border: 1px solid var(--border-color);">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Portfolio Positions Table -->
+      <div class="portfolio-table-box">
+        <table class="portfolio-table">
+          <thead>
+            <tr>
+              <th>Ticker / Empresa</th>
+              <th>Acciones</th>
+              <th>Precio Compra</th>
+              <th>Precio Actual</th>
+              <th>Valor Mercado</th>
+              <th>Ganancia / Pérdida (P&L)</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="portfolioTableBody">
+            <!-- Dynamically populated or empty state -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 4: CALENDAR (ECONOMIC & EARNINGS) ================= -->
+    <div class="view-container" id="viewCalendar">
+      <div class="calendar-layout">
+        
+        <!-- Column 1: Earnings Releases -->
+        <div class="calendar-card">
+          <h3>
+            <i class="fa-solid fa-building-columns" style="color: var(--color-accent);"></i>
+            Próximos Reportes de Ganancias (Earnings)
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top:-8px;">
+            Fechas de balances trimestrales de las mayores empresas tecnológicas de Wall Street.
+          </p>
+          <div id="earningsListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Earnings items rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Column 2: Macro Events (FED, CPI, Rates) -->
+        <div class="calendar-card">
+          <h3>
+            <i class="fa-solid fa-landmark" style="color: #f59e0b;"></i>
+            Eventos Macroeconómicos Clave (FED & Inflación)
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top:-8px;">
+            Reuniones que marcan la dirección de las tasas de interés y la liquidez de los mercados.
+          </p>
+          <div id="macroEventsListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Macro items rendered dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 
   <!-- ================= MODAL: DETAILED CHART & ANALYTICS ================= -->
@@ -308,6 +477,8 @@
             <span class="stat-label">Volumen Regular</span>
             <span class="stat-value" id="modalStatVolume">42.5M</span>
           </div>
+        </div>
+
         <!-- Quick Action: Launch Real-Time Analysis -->
         <div style="display: flex; justify-content: flex-end; padding-top: 4px;">
           <button id="modalLaunchAnalysisBtn" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #3b82f6); box-shadow: 0 2px 10px rgba(139, 92, 246, 0.35);">
@@ -567,7 +738,110 @@
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- ================= MODAL: PRICE ALERTS & NOTIFICATIONS ================= -->
+  <div class="modal-overlay" id="alertsModal">
+    <div class="modal-container" style="max-width: 620px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="logo-badge" style="background: linear-gradient(135deg, #f59e0b, #ef4444); width: 34px; height: 34px; font-size: 1rem;">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <div>
+            <h3>Alertas de Precio en Tiempo Real</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Aviso con sonido y notificación en pantalla cuando se alcance un precio</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeAlertsModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- New Alert Form -->
+        <div style="background: var(--bg-card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);"><i class="fa-solid fa-plus-circle" style="color:var(--color-accent);"></i> Crear Nueva Alerta</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Símbolo</label>
+              <input type="text" id="alertSymbolInput" class="search-input" placeholder="ej: NVDA" style="padding: 8px 10px; font-size: 0.85rem; text-transform: uppercase;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Condición</label>
+              <select id="alertConditionSelect" class="select-sort" style="width: 100%; padding: 8px 10px; font-size: 0.8rem;">
+                <option value="above">Precio suba a (>=)</option>
+                <option value="below">Precio baje a (<=)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Precio Objetivo ($)</label>
+              <input type="number" step="0.01" id="alertPriceInput" class="search-input" placeholder="ej: 165.00" style="padding: 8px 10px; font-size: 0.85rem;">
+            </div>
+          </div>
+          <button id="createAlertBtn" class="btn-primary" style="align-self: flex-end; padding: 7px 16px;">
+            <i class="fa-solid fa-bell"></i> Activar Alerta
+          </button>
+        </div>
+
+        <!-- Active Alerts List -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <h4 style="font-size: 0.85rem; font-weight: 700; margin: 0;">Alertas Configuradas</h4>
+            <button id="testChimeBtn" style="background:transparent; border:none; color:var(--color-accent); font-size:0.75rem; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:4px;">
+              <i class="fa-solid fa-volume-high"></i> Probar Sonido de Alerta
+            </button>
+          </div>
+          <div id="alertsListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD TRADE TO PORTFOLIO ================= -->
+  <div class="modal-overlay" id="addTradeModal">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="logo-badge" style="background: linear-gradient(135deg, #10b981, #059669); width: 34px; height: 34px; font-size: 1rem;">
+            <i class="fa-solid fa-briefcase"></i>
+          </div>
+          <div>
+            <h3>Simular Compra de Acción</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Añade una posición a tu portafolio para calcular P&L en vivo</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeAddTradeModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="addTradeForm" style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Símbolo / Ticker</label>
+            <input type="text" id="tradeSymbolInput" class="search-input" placeholder="ej: NVDA, AMD, AAPL, TSLA" required style="text-transform: uppercase; margin-top: 4px;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Cantidad de Acciones</label>
+              <input type="number" id="tradeSharesInput" class="search-input" min="1" step="any" placeholder="ej: 10" required style="margin-top: 4px;">
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Precio de Compra ($)</label>
+              <input type="number" id="tradePriceInput" class="search-input" min="0.01" step="0.01" placeholder="ej: 160.50" required style="margin-top: 4px;">
+            </div>
+          </div>
+          <div style="background: var(--bg-card); padding: 10px 14px; border-radius: var(--radius-md); font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-muted);">Inversión Total Estimada:</span>
+            <span style="font-size: 1rem; font-weight: 800; font-family: var(--font-mono); color: var(--text-primary);" id="tradeTotalEstimated">$0.00</span>
+          </div>
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); justify-content: center; padding: 10px;">
+            <i class="fa-solid fa-check"></i> Confirmar Transacción
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toastContainer" class="toast-container"></div>
   <footer class="app-footer">
 
     INVERT Market Terminal Pro &bull; Datos bursátiles con cotizaciones en tiempo real y análisis de noticias de mercado &bull; Diseñado para alta precisión financiera.

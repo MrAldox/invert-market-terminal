@@ -7,6 +7,7 @@
 const State = {
   watchlist: JSON.parse(localStorage.getItem('invert_watchlist') || '["NVDA", "AAPL", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "AMD", "PLTR", "COIN"]'),
   activeCategory: 'my_watchlist',
+  activeMainView: 'dashboard',
   sortOrder: 'changeDesc',
   newsFilter: 'all',
   sourceFilter: 'all',
@@ -21,14 +22,24 @@ const State = {
   activeModalRange: '1d',
   activeAnalysisSymbol: null,
   activeAnalysisTimeframe: '1d',
+  portfolioTrades: JSON.parse(localStorage.getItem('invert_portfolio_trades') || '[{"symbol":"NVDA","name":"NVIDIA Corporation","shares":15,"buyPrice":158.50},{"symbol":"AMD","name":"Advanced Micro Devices","shares":8,"buyPrice":540.00},{"symbol":"AAPL","name":"Apple Inc.","shares":10,"buyPrice":348.00}]'),
+  portfolioCash: Number(localStorage.getItem('invert_portfolio_cash') || '10000.00'),
+  priceAlerts: JSON.parse(localStorage.getItem('invert_price_alerts') || '[]'),
   theme: localStorage.getItem('invert_theme') || 'dark',
   isOnlineBackend: true
 };
 
-// Preset catalog for categories
+// Preset catalog for categories & sectors
 const StockPresets = {
   tech: ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA"],
-  all: ["AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "AMD", "NFLX", "PLTR", "COIN", "SPY", "QQQ", "BABA", "DIS", "UBER", "ARM", "SMCI"]
+  all: ["AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "AMD", "NFLX", "PLTR", "COIN", "SPY", "QQQ", "BABA", "DIS", "UBER", "ARM", "SMCI", "AVGO", "ORCL", "CRM", "JPM", "V", "MA"]
+};
+
+const HeatmapSectors = {
+  "Tecnología & Semiconductores": ["NVDA", "AAPL", "MSFT", "AMD", "ARM", "AVGO", "ORCL", "CRM", "SMCI"],
+  "Consumo & Redes": ["AMZN", "TSLA", "META", "GOOGL", "NFLX", "BABA", "DIS"],
+  "Finanzas & Pagos": ["COIN", "PLTR", "JPM", "V", "MA"],
+  "Índices & Fondos": ["SPY", "QQQ", "UBER"]
 };
 
 // Realistic mock data fallback if backend is unreachable
@@ -52,7 +63,13 @@ const MockMarket = {
       "DIS": { name: "Walt Disney Company", price: 118.40, prev: 116.20, exchange: "NYSE", high: 120.20, low: 115.80, vol: 11000000, high52: 125.70, low52: 78.70 },
       "UBER": { name: "Uber Technologies", price: 84.80, prev: 82.10, exchange: "NYSE", high: 86.60, low: 81.80, vol: 24000000, high52: 92.00, low52: 40.00 },
       "ARM": { name: "ARM Holdings plc", price: 152.30, prev: 148.50, exchange: "NASDAQ", high: 154.00, low: 147.20, vol: 16000000, high52: 188.70, low52: 46.50 },
-      "SMCI": { name: "Super Micro Computer", price: 23.40, prev: 26.80, exchange: "NASDAQ", high: 27.50, low: 22.80, vol: 89000000, high52: 122.90, low52: 21.00 }
+      "SMCI": { name: "Super Micro Computer", price: 23.40, prev: 26.80, exchange: "NASDAQ", high: 27.50, low: 22.80, vol: 89000000, high52: 122.90, low52: 21.00 },
+      "AVGO": { name: "Broadcom Inc.", price: 178.50, prev: 175.20, exchange: "NASDAQ", high: 180.40, low: 174.00, vol: 18000000, high52: 185.00, low52: 90.00 },
+      "ORCL": { name: "Oracle Corporation", price: 182.20, prev: 179.80, exchange: "NYSE", high: 184.00, low: 179.00, vol: 12000000, high52: 195.00, low52: 100.00 },
+      "CRM": { name: "Salesforce, Inc.", price: 334.80, prev: 330.10, exchange: "NYSE", high: 338.00, low: 329.00, vol: 6500000, high52: 345.00, low52: 190.00 },
+      "JPM": { name: "JPMorgan Chase & Co.", price: 242.60, prev: 240.20, exchange: "NYSE", high: 244.50, low: 239.50, vol: 9200000, high52: 248.00, low52: 140.00 },
+      "V": { name: "Visa Inc.", price: 312.40, prev: 310.00, exchange: "NYSE", high: 314.50, low: 309.20, vol: 5400000, high52: 318.00, low52: 230.00 },
+      "MA": { name: "Mastercard Inc.", price: 524.80, prev: 520.50, exchange: "NYSE", high: 528.00, low: 519.00, vol: 2300000, high52: 535.00, low52: 370.00 }
     };
 
 
@@ -199,6 +216,8 @@ const MockMarket = {
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   setupEventListeners();
+  renderAlertsList();
+  renderCalendarView();
   loadData();
   startAutoRefresh();
 });
@@ -229,6 +248,14 @@ function toggleTheme() {
 function setupEventListeners() {
   // Theme toggle
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
+  // View Switcher Tabs (Dashboard / Heatmap / Portfolio / Calendar)
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const view = e.currentTarget.dataset.view;
+      switchMainView(view);
+    });
+  });
 
   // Category Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -395,8 +422,65 @@ function setupModals() {
     });
   }
 
+  // Alerts Modal Setup
+  const alertsModal = document.getElementById('alertsModal');
+  const openAlertsBtn = document.getElementById('openAlertsModalBtn');
+  if (openAlertsBtn) {
+    openAlertsBtn.addEventListener('click', () => {
+      alertsModal.classList.add('open');
+      renderAlertsList();
+    });
+  }
+  const closeAlertsBtn = document.getElementById('closeAlertsModalBtn');
+  if (closeAlertsBtn) {
+    closeAlertsBtn.addEventListener('click', () => {
+      alertsModal.classList.remove('open');
+    });
+  }
+  const createAlertBtn = document.getElementById('createAlertBtn');
+  if (createAlertBtn) {
+    createAlertBtn.addEventListener('click', createPriceAlert);
+  }
+  const testChimeBtn = document.getElementById('testChimeBtn');
+  if (testChimeBtn) {
+    testChimeBtn.addEventListener('click', () => {
+      playAlertChime();
+      showToastNotification('Sonido de Alerta', 'Prueba de sonido ejecutada correctamente.', 'info');
+    });
+  }
+
+  // Add Trade Modal (Portfolio) Setup
+  const addTradeModal = document.getElementById('addTradeModal');
+  const openAddTradeBtn = document.getElementById('openAddTradeModalBtn');
+  if (openAddTradeBtn) {
+    openAddTradeBtn.addEventListener('click', () => openAddTradeModal());
+  }
+  const closeAddTradeBtn = document.getElementById('closeAddTradeModalBtn');
+  if (closeAddTradeBtn) {
+    closeAddTradeBtn.addEventListener('click', () => {
+      addTradeModal.classList.remove('open');
+    });
+  }
+  const resetPortfolioBtn = document.getElementById('resetPortfolioBtn');
+  if (resetPortfolioBtn) {
+    resetPortfolioBtn.addEventListener('click', resetPortfolio);
+  }
+  const tradeSharesInput = document.getElementById('tradeSharesInput');
+  const tradePriceInput = document.getElementById('tradePriceInput');
+  if (tradeSharesInput && tradePriceInput) {
+    tradeSharesInput.addEventListener('input', updateTradeEstimatedTotal);
+    tradePriceInput.addEventListener('input', updateTradeEstimatedTotal);
+  }
+  const addTradeForm = document.getElementById('addTradeForm');
+  if (addTradeForm) {
+    addTradeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitAddTrade();
+    });
+  }
+
   // Close modals on overlay backdrop click
-  [addModal, chartModal, glossaryModal, analysisModal].forEach(modal => {
+  [addModal, chartModal, glossaryModal, analysisModal, alertsModal, addTradeModal].forEach(modal => {
     if (modal) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('open');
@@ -437,6 +521,16 @@ async function loadData() {
       State.isOnlineBackend = true;
     } else {
       throw new Error("Backend offline");
+    }
+
+    // Verificar alertas de precio configuradas
+    checkPriceAlerts();
+
+    // Actualizar vistas secundarias si están activas
+    if (State.activeMainView === 'heatmap') {
+      renderHeatmap();
+    } else if (State.activeMainView === 'portfolio') {
+      renderPortfolioView();
     }
 
     // Fetch news priorizando las acciones que el usuario está siguiendo (NVDA, AMD, AAPL, etc.)
@@ -833,38 +927,57 @@ function filterNewsForStock(symbol) {
 // PREDICTIVE QUANTITATIVE ANALYSIS CONTROLLER
 // ==========================================
 async function openAnalysisModal(symbol, timeframe = '1d') {
-  State.activeAnalysisSymbol = symbol;
-  State.activeAnalysisTimeframe = timeframe;
+  try {
+    State.activeAnalysisSymbol = symbol;
+    State.activeAnalysisTimeframe = timeframe;
 
-  const modal = document.getElementById('analysisModal');
-  if (!modal) return;
+    const modal = document.getElementById('analysisModal');
+    if (!modal) {
+      console.error('analysisModal element not found');
+      return;
+    }
 
-  const stock = State.quotesData[symbol] || {
-    name: symbol,
-    symbol: symbol,
-    price: 100.0,
-    changePercent: 0.0
-  };
+    const stock = State.quotesData[symbol] || {
+      name: symbol,
+      symbol: symbol,
+      price: 100.0,
+      changePercent: 0.0
+    };
 
-  const titleElem = document.getElementById('analysisStockTitle');
-  const subElem = document.getElementById('analysisStockSubtitle');
-  if (titleElem) titleElem.innerText = `${stock.name || symbol} (${symbol}) · Análisis Predictivo`;
-  if (subElem) subElem.innerText = `Cálculo cuantitativo en tiempo real (RSI, Medias, Soporte/Resistencia y Noticias)`;
+    const titleElem = document.getElementById('analysisStockTitle');
+    const subElem = document.getElementById('analysisStockSubtitle');
+    if (titleElem) titleElem.innerText = `${stock.name || symbol} (${symbol}) · Análisis Predictivo`;
+    if (subElem) subElem.innerText = `Cálculo cuantitativo en tiempo real (RSI, Medias, Soporte/Resistencia y Noticias)`;
 
-  // Update active timeframe pill
-  document.querySelectorAll('.analysis-tf-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.analysisTf === timeframe);
-  });
+    // Update active timeframe pill
+    document.querySelectorAll('.analysis-tf-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.analysisTf === timeframe);
+    });
 
-  // Set loading state
-  const verdictText = document.getElementById('analysisVerdictText');
-  if (verdictText) verdictText.innerText = 'CALCULANDO...';
-  const summaryElem = document.getElementById('analysisSummaryText');
-  if (summaryElem) summaryElem.innerText = 'Analizando serie temporal, volatilidad y sentimiento del mercado...';
+    // Reset UI to clean loading state
+    const verdictText = document.getElementById('analysisVerdictText');
+    if (verdictText) {
+      verdictText.innerText = 'CALCULANDO...';
+      verdictText.style.color = 'var(--text-primary)';
+    }
+    const verdictBadge = document.getElementById('analysisVerdictBadge');
+    if (verdictBadge) {
+      verdictBadge.innerText = '⏳ Procesando Algoritmo...';
+      verdictBadge.className = 'badge-pct badge-yellow';
+    }
+    const summaryElem = document.getElementById('analysisSummaryText');
+    if (summaryElem) summaryElem.innerText = `Analizando serie temporal y sentimiento del mercado para ${symbol}...`;
 
-  modal.classList.add('open');
+    const currElem = document.getElementById('analysisCurrentPrice');
+    if (currElem) currElem.innerText = `$${formatNum(stock.price)}`;
 
-  await loadStockAnalysis(symbol, timeframe);
+    // Open modal immediately
+    modal.classList.add('open');
+
+    await loadStockAnalysis(symbol, timeframe);
+  } catch (err) {
+    console.error('Error in openAnalysisModal:', err);
+  }
 }
 
 async function loadStockAnalysis(symbol, timeframe = '1d') {
@@ -1228,4 +1341,583 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+// ==========================================
+// VIEW SWITCHER CONTROLLER
+// ==========================================
+function switchMainView(viewName) {
+  State.activeMainView = viewName;
+
+  // Update navbar button states
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+
+  // Switch view containers
+  const viewMap = {
+    'dashboard': 'viewDashboard',
+    'heatmap': 'viewHeatmap',
+    'portfolio': 'viewPortfolio',
+    'calendar': 'viewCalendar'
+  };
+
+  Object.entries(viewMap).forEach(([name, id]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.toggle('active', name === viewName);
+    }
+  });
+
+  if (viewName === 'heatmap') {
+    renderHeatmap();
+  } else if (viewName === 'portfolio') {
+    renderPortfolioView();
+  } else if (viewName === 'calendar') {
+    renderCalendarView();
+  } else if (viewName === 'dashboard') {
+    renderStockCards();
+  }
+}
+
+// ==========================================
+// HEATMAP RENDERER (S&P 500 POR SECTORES)
+// ==========================================
+function renderHeatmap() {
+  const container = document.getElementById('heatmapSectorsContainer');
+  if (!container) return;
+
+  const sectors = HeatmapSectors;
+  let html = '';
+
+  Object.entries(sectors).forEach(([sectorName, symbols]) => {
+    const stocks = symbols.map(sym => State.quotesData[sym] || {
+      symbol: sym,
+      name: sym,
+      price: 100.0,
+      changePercent: 0.0
+    });
+
+    const avgChange = stocks.length > 0 
+      ? stocks.reduce((acc, s) => acc + (s.changePercent || 0), 0) / stocks.length 
+      : 0;
+    const isSectorUp = avgChange >= 0;
+    const sectorBadgeClass = isSectorUp ? 'badge-green' : 'badge-red';
+    const sectorSign = isSectorUp ? '+' : '';
+
+    const tilesHtml = stocks.map(stock => {
+      const pct = stock.changePercent || 0;
+      let colorClass = 'tile-neutral';
+      if (pct >= 3.0) colorClass = 'tile-deep-green';
+      else if (pct >= 1.0) colorClass = 'tile-green';
+      else if (pct > 0.0) colorClass = 'tile-soft-green';
+      else if (pct <= -3.0) colorClass = 'tile-deep-red';
+      else if (pct <= -1.0) colorClass = 'tile-red';
+      else if (pct < 0.0) colorClass = 'tile-soft-red';
+
+      const sign = pct >= 0 ? '+' : '';
+      const arrow = pct >= 0 ? '▲' : '▼';
+
+      return `
+        <div class="heatmap-tile ${colorClass}" onclick="openAnalysisModal('${stock.symbol}')" title="Clic para Análisis Predictivo de ${stock.name || stock.symbol}">
+          <span class="tile-sym">${stock.symbol}</span>
+          <span class="tile-price">$${formatNum(stock.price)}</span>
+          <span class="tile-pct">${sign}${pct.toFixed(2)}% ${arrow}</span>
+        </div>
+      `;
+    }).join('');
+
+    html += `
+      <div class="heatmap-sector-card">
+        <div class="sector-card-header">
+          <div class="sector-title">
+            <i class="fa-solid fa-layer-group" style="color: var(--color-accent);"></i>
+            ${sectorName}
+          </div>
+          <span class="sector-avg-badge ${sectorBadgeClass}">
+            Promedio: ${sectorSign}${avgChange.toFixed(2)}%
+          </span>
+        </div>
+        <div class="sector-tiles-grid">
+          ${tilesHtml}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// ==========================================
+// PORTFOLIO CONTROLLER (PAPER TRADING P&L)
+// ==========================================
+function renderPortfolioView() {
+  const tableBody = document.getElementById('portfolioTableBody');
+  if (!tableBody) return;
+
+  const trades = State.portfolioTrades || [];
+  let totalStockValue = 0;
+  let totalCost = 0;
+  let totalDayGain = 0;
+
+  if (trades.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <i class="fa-solid fa-briefcase" style="font-size: 2rem; margin-bottom: 8px; display:block; opacity: 0.5;"></i>
+          No tienes posiciones abiertas en tu portafolio simulado.<br>
+          <button class="btn-primary" onclick="openAddTradeModal()" style="margin: 12px auto 0; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669);">
+            <i class="fa-solid fa-plus"></i> Comprar Primera Acción
+          </button>
+        </td>
+      </tr>
+    `;
+  } else {
+    tableBody.innerHTML = trades.map((trade, idx) => {
+      const stock = State.quotesData[trade.symbol] || {
+        price: trade.buyPrice,
+        changePercent: 0,
+        change: 0,
+        name: trade.name || trade.symbol
+      };
+
+      const currPrice = stock.price || trade.buyPrice;
+      const shares = trade.shares || 1;
+      const cost = shares * trade.buyPrice;
+      const marketVal = shares * currPrice;
+      const profitDollar = marketVal - cost;
+      const profitPct = cost > 0 ? (profitDollar / cost) * 100 : 0;
+      const isUp = profitDollar >= 0;
+      const sign = isUp ? '+' : '';
+      const color = isUp ? 'var(--color-green-text)' : 'var(--color-red-text)';
+
+      totalStockValue += marketVal;
+      totalCost += cost;
+      totalDayGain += shares * (stock.change || 0);
+
+      return `
+        <tr>
+          <td>
+            <strong>${trade.symbol}</strong>
+            <div class="table-stock-name">${stock.name || trade.symbol}</div>
+          </td>
+          <td><strong>${shares}</strong> títulos</td>
+          <td>$${formatNum(trade.buyPrice)}</td>
+          <td><strong>$${formatNum(currPrice)}</strong></td>
+          <td><strong>$${formatNum(marketVal)}</strong></td>
+          <td>
+            <div style="font-weight: 800; color: ${color}; font-family: var(--font-mono);">
+              ${sign}$${formatNum(Math.abs(profitDollar))} (${sign}${profitPct.toFixed(2)}%)
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <div class="table-btn-group" style="justify-content: flex-end;">
+              <button class="table-action-btn" onclick="openAnalysisModal('${trade.symbol}')" title="Análisis Predictivo">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+              </button>
+              <button class="table-action-btn" onclick="openChartModal('${trade.symbol}')" title="Gráfico">
+                <i class="fa-solid fa-chart-line"></i>
+              </button>
+              <button class="table-action-btn btn-sell" onclick="closePortfolioTrade(${idx})" title="Vender Posición">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Vender
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Calculate totals
+  const cash = State.portfolioCash || 10000.00;
+  const netWorth = totalStockValue + cash;
+  const netProfit = totalStockValue - totalCost;
+  const netProfitPct = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
+  const isNetUp = netProfit >= 0;
+  const netSign = isNetUp ? '+' : '';
+  const netColor = isNetUp ? 'var(--color-green-text)' : 'var(--color-red-text)';
+
+  const isDayUp = totalDayGain >= 0;
+  const daySign = isDayUp ? '+' : '';
+  const dayColor = isDayUp ? 'var(--color-green-text)' : 'var(--color-red-text)';
+
+  // Update KPI Cards
+  const valElem = document.getElementById('portfolioTotalValue');
+  if (valElem) valElem.innerText = `$${formatNum(netWorth)}`;
+
+  const plElem = document.getElementById('portfolioTotalPL');
+  if (plElem) {
+    plElem.innerText = `${netSign}$${formatNum(Math.abs(netProfit))}`;
+    plElem.style.color = netColor;
+  }
+
+  const plPctElem = document.getElementById('portfolioTotalPLPct');
+  if (plPctElem) {
+    plPctElem.innerText = `${netSign}${netProfitPct.toFixed(2)}% Retorno Total`;
+    plPctElem.style.color = netColor;
+  }
+
+  const dayElem = document.getElementById('portfolioDayPL');
+  if (dayElem) {
+    dayElem.innerText = `${daySign}$${formatNum(Math.abs(totalDayGain))}`;
+    dayElem.style.color = dayColor;
+  }
+
+  const dayPctElem = document.getElementById('portfolioDayPLPct');
+  if (dayPctElem) {
+    const dayPct = totalCost > 0 ? (totalDayGain / totalCost) * 100 : 0;
+    dayPctElem.innerText = `${daySign}${dayPct.toFixed(2)}% Hoy`;
+    dayPctElem.style.color = dayColor;
+  }
+
+  const cashElem = document.getElementById('portfolioCashBalance');
+  if (cashElem) cashElem.innerText = `$${formatNum(cash)}`;
+
+  const badgeElem = document.getElementById('portfolioOpenPositionsBadge');
+  if (badgeElem) badgeElem.innerText = `${trades.length} Posiciones`;
+}
+
+function openAddTradeModal(prefillSymbol = '') {
+  const modal = document.getElementById('addTradeModal');
+  if (!modal) return;
+  const symInput = document.getElementById('tradeSymbolInput');
+  const priceInput = document.getElementById('tradePriceInput');
+  const sharesInput = document.getElementById('tradeSharesInput');
+
+  if (prefillSymbol) {
+    symInput.value = prefillSymbol.toUpperCase();
+    const stock = State.quotesData[prefillSymbol.toUpperCase()];
+    if (stock) priceInput.value = stock.price.toFixed(2);
+  } else {
+    symInput.value = '';
+    priceInput.value = '';
+  }
+  sharesInput.value = '10';
+  updateTradeEstimatedTotal();
+
+  modal.classList.add('open');
+  symInput.focus();
+}
+
+function updateTradeEstimatedTotal() {
+  const shares = parseFloat(document.getElementById('tradeSharesInput').value) || 0;
+  const price = parseFloat(document.getElementById('tradePriceInput').value) || 0;
+  const total = shares * price;
+  const el = document.getElementById('tradeTotalEstimated');
+  if (el) el.innerText = `$${formatNum(total)}`;
+}
+
+function submitAddTrade() {
+  const sym = document.getElementById('tradeSymbolInput').value.trim().toUpperCase();
+  const shares = parseFloat(document.getElementById('tradeSharesInput').value) || 0;
+  const price = parseFloat(document.getElementById('tradePriceInput').value) || 0;
+
+  if (!sym || shares <= 0 || price <= 0) return;
+
+  const cost = shares * price;
+  if (cost > State.portfolioCash) {
+    showToastNotification('Saldo Insuficiente', `La compra requiere $${formatNum(cost)}, pero tu efectivo disponible es $${formatNum(State.portfolioCash)}.`, 'alert');
+    return;
+  }
+
+  State.portfolioCash -= cost;
+  localStorage.setItem('invert_portfolio_cash', State.portfolioCash.toFixed(2));
+
+  const stock = State.quotesData[sym];
+  State.portfolioTrades.push({
+    symbol: sym,
+    name: stock ? stock.name : sym,
+    shares: shares,
+    buyPrice: price
+  });
+  localStorage.setItem('invert_portfolio_trades', JSON.stringify(State.portfolioTrades));
+
+  document.getElementById('addTradeModal').classList.remove('open');
+  showToastNotification('Posición Añadida', `Compraste ${shares} acciones de ${sym} a $${formatNum(price)}`, 'success');
+  playAlertChime();
+
+  renderPortfolioView();
+}
+
+function closePortfolioTrade(idx) {
+  const trade = State.portfolioTrades[idx];
+  if (!trade) return;
+
+  const stock = State.quotesData[trade.symbol];
+  const currPrice = stock ? stock.price : trade.buyPrice;
+  const proceeds = trade.shares * currPrice;
+  const profit = proceeds - (trade.shares * trade.buyPrice);
+
+  State.portfolioCash += proceeds;
+  localStorage.setItem('invert_portfolio_cash', State.portfolioCash.toFixed(2));
+
+  State.portfolioTrades.splice(idx, 1);
+  localStorage.setItem('invert_portfolio_trades', JSON.stringify(State.portfolioTrades));
+
+  const sign = profit >= 0 ? '+' : '';
+  showToastNotification('Posición Cerrada', `Vendiste ${trade.shares} ${trade.symbol} por $${formatNum(proceeds)} (${sign}$${formatNum(profit)})`, profit >= 0 ? 'success' : 'alert');
+  playAlertChime();
+
+  renderPortfolioView();
+}
+
+function resetPortfolio() {
+  if (confirm('¿Deseas reiniciar tu portafolio con $10,000 en efectivo y posiciones iniciales?')) {
+    State.portfolioCash = 10000.00;
+    State.portfolioTrades = [
+      { symbol: "NVDA", name: "NVIDIA Corporation", shares: 15, buyPrice: 158.50 },
+      { symbol: "AMD", name: "Advanced Micro Devices", shares: 8, buyPrice: 540.00 },
+      { symbol: "AAPL", name: "Apple Inc.", shares: 10, buyPrice: 348.00 }
+    ];
+    localStorage.setItem('invert_portfolio_cash', '10000.00');
+    localStorage.setItem('invert_portfolio_trades', JSON.stringify(State.portfolioTrades));
+    showToastNotification('Portafolio Reiniciado', 'Tu saldo se ha restablecido a $10,000.00', 'info');
+    renderPortfolioView();
+  }
+}
+
+// ==========================================
+// ALERTS ENGINE & WEB AUDIO CHIME
+// ==========================================
+function playAlertChime() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    
+    // First chime (D5 - 587.33 Hz)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now);
+    gain1.gain.setValueAtTime(0.18, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.45);
+
+    // Second chime (A5 - 880 Hz harmonic)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880.00, now + 0.12);
+    gain2.gain.setValueAtTime(0.22, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.8);
+  } catch (e) {
+    console.warn("AudioContext chime warning:", e);
+  }
+}
+
+function showToastNotification(title, message, type = 'info') {
+  let toastContainer = document.getElementById('toastContainer');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toastContainer';
+    toastContainer.className = 'toast-container';
+    document.body.appendChild(toastContainer);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast-item toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon"><i class="fa-solid fa-bell"></i></div>
+    <div class="toast-content">
+      <strong>${title}</strong>
+      <div>${message}</div>
+    </div>
+    <button class="toast-close">&times;</button>
+  `;
+  toast.querySelector('.toast-close').onclick = () => toast.remove();
+  toastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, 6000);
+}
+
+function renderAlertsList() {
+  const container = document.getElementById('alertsListContainer');
+  const badge = document.getElementById('alertsBadgeCount');
+  if (!container) return;
+
+  const alerts = State.priceAlerts || [];
+  const activeCount = alerts.filter(a => !a.triggered).length;
+
+  if (badge) {
+    if (activeCount > 0) {
+      badge.innerText = activeCount;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  if (alerts.length === 0) {
+    container.innerHTML = `<div style="padding:15px; text-align:center; color:var(--text-muted); font-size:0.8rem;">No tienes alertas configuradas. Define una arriba.</div>`;
+    return;
+  }
+
+  container.innerHTML = alerts.map((alert, idx) => {
+    const isAbove = alert.condition === 'above';
+    const condText = isAbove ? 'Suba por encima de' : 'Baje por debajo de';
+    const condIcon = isAbove ? '▲' : '▼';
+    const condColor = isAbove ? 'var(--color-green-text)' : 'var(--color-red-text)';
+
+    return `
+      <div style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-weight:900; font-size:0.95rem;">${alert.symbol}</span>
+          <span style="font-size:0.75rem; color:${condColor}; margin-left:8px; font-weight:700;">
+            ${condIcon} ${condText} <strong>$${formatNum(alert.targetPrice)}</strong>
+          </span>
+          ${alert.triggered ? '<span class="badge-pct badge-green" style="margin-left:6px; font-size:0.65rem;">¡DISPARADA!</span>' : ''}
+        </div>
+        <button onclick="removePriceAlert(${idx})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem;">
+          &times;
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function createPriceAlert() {
+  const symInput = document.getElementById('alertSymbolInput');
+  const condSelect = document.getElementById('alertConditionSelect');
+  const priceInput = document.getElementById('alertPriceInput');
+
+  const sym = symInput.value.trim().toUpperCase();
+  const cond = condSelect.value;
+  const targetPrice = parseFloat(priceInput.value);
+
+  if (!sym || isNaN(targetPrice) || targetPrice <= 0) {
+    alert('Por favor ingresa un símbolo válido y un precio objetivo.');
+    return;
+  }
+
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  State.priceAlerts.push({
+    symbol: sym,
+    condition: cond,
+    targetPrice: targetPrice,
+    triggered: false,
+    createdAt: Date.now()
+  });
+
+  localStorage.setItem('invert_price_alerts', JSON.stringify(State.priceAlerts));
+  symInput.value = '';
+  priceInput.value = '';
+
+  showToastNotification('Alerta Activada', `Te avisaremos cuando ${sym} ${cond === 'above' ? 'suba a' : 'baje a'} $${formatNum(targetPrice)}`, 'success');
+  playAlertChime();
+  renderAlertsList();
+}
+
+function removePriceAlert(idx) {
+  State.priceAlerts.splice(idx, 1);
+  localStorage.setItem('invert_price_alerts', JSON.stringify(State.priceAlerts));
+  renderAlertsList();
+}
+
+function checkPriceAlerts() {
+  if (!State.priceAlerts || State.priceAlerts.length === 0) return;
+
+  State.priceAlerts.forEach(alert => {
+    if (alert.triggered) return;
+    const stock = State.quotesData[alert.symbol];
+    if (!stock || !stock.price) return;
+
+    let hit = false;
+    if (alert.condition === 'above' && stock.price >= alert.targetPrice) {
+      hit = true;
+    } else if (alert.condition === 'below' && stock.price <= alert.targetPrice) {
+      hit = true;
+    }
+
+    if (hit) {
+      alert.triggered = true;
+      localStorage.setItem('invert_price_alerts', JSON.stringify(State.priceAlerts));
+
+      playAlertChime();
+      const actionText = alert.condition === 'above' ? 'superó el objetivo de' : 'cayó por debajo de';
+      const msg = `${alert.symbol} ${actionText} $${formatNum(alert.targetPrice)} (Precio actual: $${formatNum(stock.price)})`;
+
+      showToastNotification(`🔔 ¡Alerta de Precio Cumplida!`, msg, 'alert');
+
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification(`INVERT Alerta: ${alert.symbol}`, {
+          body: msg,
+          icon: '/favicon.ico'
+        });
+      }
+
+      renderAlertsList();
+    }
+  });
+}
+
+// ==========================================
+// CALENDAR VIEW (ECONOMIC & EARNINGS)
+// ==========================================
+function renderCalendarView() {
+  const earningsContainer = document.getElementById('earningsListContainer');
+  const macroContainer = document.getElementById('macroEventsListContainer');
+  if (!earningsContainer || !macroContainer) return;
+
+  const earningsData = [
+    { symbol: "NVDA", name: "NVIDIA Corporation", date: "Próximos días", time: "Después de Cierre (AMC)", epsEst: "$0.84", epsPrior: "$0.68", vol: "±8.5%", note: "Foco en demanda de arquitectura Blackwell y transición directiva tras salida de Jensen Huang." },
+    { symbol: "TSLA", name: "Tesla, Inc.", date: "Esta semana", time: "Después de Cierre (AMC)", epsEst: "$0.72", epsPrior: "$0.62", vol: "±7.2%", note: "Márgenes automotrices y avances en robotaxis y conducción autónoma FSD." },
+    { symbol: "AAPL", name: "Apple Inc.", date: "Próxima semana", time: "Después de Cierre (AMC)", epsEst: "$1.64", epsPrior: "$1.46", vol: "±4.8%", note: "Ventas de nuevos iPhones y adopción de Apple Intelligence en servicios." },
+    { symbol: "MSFT", name: "Microsoft Corporation", date: "Este mes", time: "Después de Cierre (AMC)", epsEst: "$3.10", epsPrior: "$2.99", vol: "±5.1%", note: "Tasa de crecimiento de Azure Cloud e infraestructura de IA para empresas." },
+    { symbol: "AMD", name: "Advanced Micro Devices", date: "Próximas semanas", time: "Después de Cierre (AMC)", epsEst: "$1.15", epsPrior: "$0.92", vol: "±9.0%", note: "Participación de mercado en centros de datos con aceleradores MI300/MI350." }
+  ];
+
+  earningsContainer.innerHTML = earningsData.map(item => `
+    <div class="earnings-item-card">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <strong style="font-size:1.05rem;">${item.symbol}</strong>
+          <span style="font-size:0.75rem; color:var(--text-muted);">${item.name}</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--color-accent); font-weight:700; margin-top:2px;">
+          📅 ${item.date} &bull; ${item.time}
+        </div>
+        <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px;">${item.note}</div>
+      </div>
+      <div style="text-align:right; min-width:110px;">
+        <span class="badge-pct badge-green" style="font-size:0.7rem;">EPS Est: ${item.epsEst}</span>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">Volatilidad: ${item.vol}</div>
+        <button class="table-action-btn" onclick="openAnalysisModal('${item.symbol}')" style="margin-top:6px; font-size:0.7rem;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Analizar
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  const macroData = [
+    { title: "Decisión de Tipos de Interés FOMC (Reserva Federal)", badge: "🔴 Impacto Crítico", badgeClass: "badge-red", detail: "La Reserva Federal fija las tasas de referencia. Rango actual: 4.50% - 4.75%. El mercado vigila proyecciones de liquidez y discurso del presidente de la Fed.", time: "Próxima reunión oficial" },
+    { title: "Índice de Precios al Consumidor (CPI / Inflación de EE.UU.)", badge: "🔴 Alto Impacto", badgeClass: "badge-red", detail: "Dato clave que determina si la inflación converge a la meta del 2%. Desviaciones por encima disparan los rendimientos de los bonos.", time: "Publicación mensual" },
+    { title: "Nóminas no Agrícolas (NFP) y Tasa de Desempleo", badge: "🟡 Medio Impacto", badgeClass: "badge-yellow", detail: "Termómetro del mercado laboral estadounidense. Creación estimada de 165,000 empleos.", time: "Primer viernes del mes" }
+  ];
+
+  macroContainer.innerHTML = macroData.map(m => `
+    <div class="macro-event-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="font-size:0.88rem;">${m.title}</strong>
+        <span class="badge-pct ${m.badgeClass}" style="font-size:0.68rem;">${m.badge}</span>
+      </div>
+      <p style="font-size:0.76rem; color:var(--text-secondary); line-height:1.4; margin:2px 0;">${m.detail}</p>
+      <span style="font-size:0.7rem; color:var(--text-muted); font-weight:700;"><i class="fa-regular fa-clock"></i> ${m.time}</span>
+    </div>
+  `).join('');
 }
