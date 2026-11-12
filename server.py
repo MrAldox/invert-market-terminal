@@ -37,6 +37,12 @@ HEADERS = {
 }
 
 # Palabras clave para análisis de impacto y sentimiento
+CRISIS_KEYWORDS = [
+    "oust", "ousted", "ouster", "resign", "resigns", "resignation", "fired", "scandal", "affair",
+    "probe", "investigation", "lawsuit", "allegations", "fallout", "smuggling", "sec probe", "doj",
+    "fraud", "turmoil", "crisis"
+]
+
 BULLISH_KEYWORDS = [
     "surge", "surges", "jump", "jumps", "soar", "soars", "gain", "gains", "beat", "beats",
     "record", "rally", "rallies", "boost", "boosts", "rise", "rises", "climbs", "climbed",
@@ -47,30 +53,40 @@ BULLISH_KEYWORDS = [
 BEARISH_KEYWORDS = [
     "fall", "falls", "drop", "drops", "plunge", "plunges", "slump", "slumps", "slide", "slides",
     "dive", "dives", "miss", "misses", "cut", "cuts", "warn", "warns", "warning", "bear",
-    "bearish", "tank", "tanks", "probe", "lawsuit", "loss", "losses", "down", "oust", "crisis",
-    "downgrade", "investigation", "layoffs", "delay", "decline", "selloff", "weak", "plummets"
+    "bearish", "tank", "tanks", "loss", "losses", "down", "downgrade", "layoffs", "delay",
+    "decline", "selloff", "weak", "plummets"
 ]
 
 DEFAULT_SYMBOLS = ["AAPL", "NVDA", "TSLA", "MSFT", "AMZN", "GOOGL", "META", "AMD", "NFLX", "PLTR", "COIN", "SPY"]
 
 def analyze_sentiment(title: str):
     t_lower = title.lower()
-    bull_count = sum(1 for w in BULLISH_KEYWORDS if f" {w} " in f" {t_lower} ")
-    bear_count = sum(1 for w in BEARISH_KEYWORDS if f" {w} " in f" {t_lower} ")
+    
+    # 1. Detección prioritaria de crisis corporativa / directiva
+    if any(k in t_lower for k in CRISIS_KEYWORDS):
+        return {
+            "sentiment": "bearish",
+            "badge": "🚨 Crisis Directiva / Alerta",
+            "impactType": "negative",
+            "impactText": "Alerta de gobernanza o escándalo directivo: Genera incertidumbre institucional y fuerte presión vendedora inmediata."
+        }
+
+    bull_count = sum(1 for w in BULLISH_KEYWORDS if w in t_lower)
+    bear_count = sum(1 for w in BEARISH_KEYWORDS if w in t_lower)
     
     if bull_count > bear_count:
         return {
             "sentiment": "bullish",
             "badge": "🟢 Impacto Alcista",
             "impactType": "positive",
-            "impactText": "Catalizador positivo: Señal de crecimiento, buenos resultados o respaldo del mercado."
+            "impactText": "Catalizador positivo: Señal de crecimiento, demanda récord o respaldo de analistas."
         }
     elif bear_count > bull_count:
         return {
             "sentiment": "bearish",
             "badge": "🔴 Impacto Bajista",
             "impactType": "negative",
-            "impactText": "Riesgo de volatilidad a la baja: Preocupación entre analistas o presión vendedora."
+            "impactText": "Riesgo de volatilidad a la baja: Preocupación de analistas, rebaja o presión vendedora."
         }
     else:
         return {
@@ -79,6 +95,7 @@ def analyze_sentiment(title: str):
             "impactType": "neutral",
             "impactText": "Desarrollo informativo relevante para el seguimiento macroeconómico de la empresa."
         }
+
 
 
 def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m"):
@@ -166,18 +183,19 @@ def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m")
 
 def generate_fallback_quote(symbol: str):
     presets = {
-        "AAPL": {"name": "Apple Inc.", "price": 224.20, "prev": 221.50},
-        "NVDA": {"name": "NVIDIA Corporation", "price": 141.80, "prev": 137.90},
-        "TSLA": {"name": "Tesla, Inc.", "price": 218.40, "prev": 223.10},
-        "MSFT": {"name": "Microsoft Corporation", "price": 428.50, "prev": 425.20},
-        "AMZN": {"name": "Amazon.com, Inc.", "price": 186.40, "prev": 184.10},
-        "GOOGL": {"name": "Alphabet Inc.", "price": 165.20, "prev": 166.80},
-        "META": {"name": "Meta Platforms, Inc.", "price": 582.00, "prev": 570.50},
-        "AMD": {"name": "Advanced Micro Devices", "price": 156.30, "prev": 152.00},
-        "NFLX": {"name": "Netflix, Inc.", "price": 705.50, "prev": 698.00},
-        "PLTR": {"name": "Palantir Technologies", "price": 42.10, "prev": 39.80},
-        "COIN": {"name": "Coinbase Global", "price": 212.50, "prev": 204.00},
-        "SPY": {"name": "SPDR S&P 500 ETF Trust", "price": 586.20, "prev": 584.00},
+        "AAPL": {"name": "Apple Inc.", "price": 355.30, "prev": 355.00},
+        "NVDA": {"name": "NVIDIA Corporation", "price": 164.80, "prev": 173.70},
+        "TSLA": {"name": "Tesla, Inc.", "price": 392.00, "prev": 390.80},
+        "MSFT": {"name": "Microsoft Corporation", "price": 528.70, "prev": 521.10},
+        "AMZN": {"name": "Amazon.com, Inc.", "price": 269.50, "prev": 266.20},
+        "GOOGL": {"name": "Alphabet Inc.", "price": 302.10, "prev": 293.50},
+        "META": {"name": "Meta Platforms, Inc.", "price": 626.40, "prev": 628.80},
+        "AMD": {"name": "Advanced Micro Devices", "price": 583.10, "prev": 552.90},
+        "NFLX": {"name": "Netflix, Inc.", "price": 812.00, "prev": 804.50},
+        "PLTR": {"name": "Palantir Technologies", "price": 172.60, "prev": 172.40},
+        "COIN": {"name": "Coinbase Global", "price": 133.50, "prev": 136.30},
+        "SPY": {"name": "SPDR S&P 500 ETF Trust", "price": 588.40, "prev": 586.00},
+        "QQQ": {"name": "Invesco QQQ Trust", "price": 518.20, "prev": 515.00},
     }
     base = presets.get(symbol.upper(), {"name": symbol.upper(), "price": 150.00, "prev": 148.50})
     price = base["price"]
@@ -276,51 +294,59 @@ def get_chart(symbol: str = Query(...), range_val: str = Query(default="1d"), in
 
 
 @app.get("/api/news")
-def get_news(symbols: Optional[str] = Query(default=None), limit: int = Query(default=20)):
+def get_news(symbols: Optional[str] = Query(default=None), limit: int = Query(default=35)):
     """
     Obtiene noticias financieras en tiempo real con análisis de impacto
-    (Positivo/Negativo/Neutro) y relación directa con las acciones.
+    (Positivo/Negativo/Neutro/Crisis) y relación directa con las acciones.
     """
     cache_key = f"{symbols}:{limit}"
     now = time.time()
     if cache_key in CACHE["news"]:
         entry = CACHE["news"][cache_key]
-        if now - entry["time"] < 30:
+        if now - entry["time"] < 15:
             return entry["data"]
 
     queries = []
     if symbols:
         sym_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
-        queries.extend(sym_list[:4])
+        queries.extend(sym_list[:6])
+        if "NVDA" not in queries:
+            queries.append("NVDA")
     else:
-        queries = ["stock market", "earnings", "tech stocks"]
+        # Por defecto siempre consultar las acciones con noticias más calientes del mercado
+        queries = ["NVDA", "AMD", "TSLA", "AAPL", "MSFT", "market"]
 
     all_news = []
     seen_titles = set()
 
     for q in queries:
-        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={q}&newsCount={limit}"
+        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={q}&newsCount=8"
         try:
-            r = requests.get(url, headers=HEADERS, timeout=4)
+            r = requests.get(url, headers=HEADERS, timeout=5)
             if r.status_code == 200:
                 items = r.json().get("news", [])
                 for it in items:
                     title = it.get("title", "")
-                    if title in seen_titles:
+                    if not title or title in seen_titles:
                         continue
                     seen_titles.add(title)
 
                     tickers = [t for t in it.get("relatedTickers", []) if not t.startswith("^")]
+                    if q.upper() not in tickers and not q.startswith("market"):
+                        tickers.insert(0, q.upper())
+
                     sentiment_info = analyze_sentiment(title)
 
                     thumb = None
                     if it.get("thumbnail") and it["thumbnail"].get("resolutions"):
                         thumb = it["thumbnail"]["resolutions"][0].get("url")
 
+                    pub = it.get("publisher", "Yahoo Finance")
+
                     all_news.append({
                         "uuid": it.get("uuid", str(time.time())),
                         "title": title,
-                        "publisher": it.get("publisher", "Mercado Financiero"),
+                        "publisher": pub,
                         "link": it.get("link", "#"),
                         "time": it.get("providerPublishTime", int(time.time())),
                         "tickers": tickers,
@@ -333,9 +359,10 @@ def get_news(symbols: Optional[str] = Query(default=None), limit: int = Query(de
         except Exception as e:
             print(f"Error fetching news for {q}: {e}")
 
-    # Ordenar por fecha descendente
+    # Ordenar por fecha descendente (lo más nuevo primero)
     all_news.sort(key=lambda x: x["time"], reverse=True)
     all_news = all_news[:limit]
+
 
     # Si no hubo noticias online, proporcionar noticias de mercado de respaldo
     if not all_news:

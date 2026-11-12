@@ -222,6 +222,22 @@
             <button class="news-pill-btn" data-news-filter="breaking">⚡ Breaking</button>
           </div>
 
+          <!-- News Source / Publisher Filter -->
+          <div class="news-source-filter-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px;">
+            <label for="newsSourceSelect" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-filter" style="color: var(--color-accent);"></i> Medio:
+            </label>
+            <select id="newsSourceSelect" class="select-sort" style="flex: 1; padding: 5px 8px; font-size: 0.75rem;">
+              <option value="all">Todas las Fuentes</option>
+              <option value="yahoo">Yahoo Finance</option>
+              <option value="journal">The Wall Street Journal</option>
+              <option value="investing">Investing.com</option>
+              <option value="bloomberg">Bloomberg</option>
+              <option value="reuters">Reuters</option>
+              <option value="motley">Motley Fool</option>
+            </select>
+          </div>
+
           <!-- Active Stock Filter Notice (when user clicks an action or tag) -->
           <div class="active-stock-filter-box" id="activeStockFilterBox" style="display: none;">
             <span>Filtrando noticias para: <strong id="activeFilteredStockTag">NVDA</strong></span>

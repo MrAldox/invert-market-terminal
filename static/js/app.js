@@ -9,8 +9,9 @@ const State = {
   activeCategory: 'my_watchlist',
   sortOrder: 'changeDesc',
   newsFilter: 'all',
+  sourceFilter: 'all',
   stockNewsFilter: null,
-  quotesData: {},
+  quotesData: JSON.parse(localStorage.getItem('invert_cached_quotes') || '{}'),
   previousPrices: {},
   newsData: [],
   autoRefreshActive: true,
@@ -32,25 +33,26 @@ const StockPresets = {
 const MockMarket = {
   generateQuotes(symbols) {
     const bases = {
-      "NVDA": { name: "NVIDIA Corporation", price: 174.20, prev: 169.50, exchange: "NASDAQ", high: 175.80, low: 168.90, vol: 64200000, high52: 178.50, low52: 68.20 },
-      "AAPL": { name: "Apple Inc.", price: 228.60, prev: 226.10, exchange: "NASDAQ", high: 229.40, low: 225.80, vol: 48900000, high52: 237.20, low52: 164.00 },
-      "TSLA": { name: "Tesla, Inc.", price: 219.80, prev: 224.50, exchange: "NASDAQ", high: 226.00, low: 217.20, vol: 54100000, high52: 271.00, low52: 138.80 },
-      "MSFT": { name: "Microsoft Corporation", price: 426.30, prev: 423.80, exchange: "NASDAQ", high: 428.10, low: 422.50, vol: 21000000, high52: 468.30, low52: 366.50 },
-      "AMZN": { name: "Amazon.com, Inc.", price: 188.50, prev: 185.70, exchange: "NASDAQ", high: 189.40, low: 185.00, vol: 35000000, high52: 201.20, low52: 118.30 },
-      "GOOGL": { name: "Alphabet Inc.", price: 166.40, prev: 168.20, exchange: "NASDAQ", high: 169.10, low: 165.70, vol: 28000000, high52: 191.70, low52: 120.20 },
-      "META": { name: "Meta Platforms, Inc.", price: 586.20, prev: 574.90, exchange: "NASDAQ", high: 589.00, low: 573.10, vol: 18200000, high52: 602.90, low52: 279.40 },
-      "AMD": { name: "Advanced Micro Devices", price: 154.60, prev: 151.20, exchange: "NASDAQ", high: 156.40, low: 150.30, vol: 41000000, high52: 227.30, low52: 94.00 },
-      "PLTR": { name: "Palantir Technologies", price: 43.80, prev: 41.20, exchange: "NYSE", high: 44.50, low: 40.80, vol: 52000000, high52: 45.10, low52: 14.50 },
-      "COIN": { name: "Coinbase Global, Inc.", price: 216.40, prev: 207.10, exchange: "NASDAQ", high: 220.00, low: 205.50, vol: 14300000, high52: 283.40, low52: 70.10 },
-      "NFLX": { name: "Netflix, Inc.", price: 712.00, prev: 704.50, exchange: "NASDAQ", high: 716.40, low: 702.00, vol: 6200000, high52: 730.00, low52: 370.20 },
-      "SPY": { name: "SPDR S&P 500 ETF", price: 588.40, prev: 585.80, exchange: "NYSE", high: 589.60, low: 585.20, vol: 62000000, high52: 590.20, low52: 410.00 },
-      "QQQ": { name: "Invesco QQQ Trust", price: 498.20, prev: 494.50, exchange: "NASDAQ", high: 500.10, low: 493.80, vol: 45000000, high52: 503.50, low52: 350.00 },
-      "BABA": { name: "Alibaba Group Holding", price: 92.50, prev: 94.20, exchange: "NYSE", high: 95.00, low: 91.80, vol: 32000000, high52: 117.50, low52: 68.00 },
-      "DIS": { name: "Walt Disney Company", price: 98.40, prev: 97.20, exchange: "NYSE", high: 99.20, low: 96.80, vol: 11000000, high52: 123.70, low52: 78.70 },
-      "UBER": { name: "Uber Technologies", price: 74.80, prev: 73.10, exchange: "NYSE", high: 75.60, low: 72.80, vol: 24000000, high52: 87.00, low52: 40.00 },
-      "ARM": { name: "ARM Holdings plc", price: 142.30, prev: 138.50, exchange: "NASDAQ", high: 144.00, low: 137.20, vol: 16000000, high52: 188.70, low52: 46.50 },
+      "NVDA": { name: "NVIDIA Corporation", price: 164.80, prev: 173.70, exchange: "NASDAQ", high: 175.80, low: 162.90, vol: 94200000, high52: 178.50, low52: 68.20 },
+      "AAPL": { name: "Apple Inc.", price: 355.30, prev: 355.00, exchange: "NASDAQ", high: 357.40, low: 352.80, vol: 48900000, high52: 360.20, low52: 164.00 },
+      "TSLA": { name: "Tesla, Inc.", price: 392.00, prev: 390.80, exchange: "NASDAQ", high: 396.00, low: 387.20, vol: 54100000, high52: 410.00, low52: 138.80 },
+      "MSFT": { name: "Microsoft Corporation", price: 528.70, prev: 521.10, exchange: "NASDAQ", high: 531.10, low: 520.50, vol: 21000000, high52: 540.30, low52: 366.50 },
+      "AMZN": { name: "Amazon.com, Inc.", price: 269.50, prev: 266.20, exchange: "NASDAQ", high: 272.40, low: 265.00, vol: 35000000, high52: 280.20, low52: 118.30 },
+      "GOOGL": { name: "Alphabet Inc.", price: 302.10, prev: 293.50, exchange: "NASDAQ", high: 305.10, low: 292.70, vol: 28000000, high52: 310.70, low52: 120.20 },
+      "META": { name: "Meta Platforms, Inc.", price: 626.40, prev: 628.80, exchange: "NASDAQ", high: 632.00, low: 622.10, vol: 18200000, high52: 645.90, low52: 279.40 },
+      "AMD": { name: "Advanced Micro Devices", price: 583.10, prev: 552.90, exchange: "NASDAQ", high: 590.40, low: 550.30, vol: 51000000, high52: 610.30, low52: 140.00 },
+      "PLTR": { name: "Palantir Technologies", price: 172.60, prev: 172.40, exchange: "NYSE", high: 176.50, low: 170.80, vol: 52000000, high52: 180.10, low52: 25.50 },
+      "COIN": { name: "Coinbase Global, Inc.", price: 133.50, prev: 136.30, exchange: "NASDAQ", high: 140.00, low: 131.50, vol: 24300000, high52: 283.40, low52: 70.10 },
+      "NFLX": { name: "Netflix, Inc.", price: 812.00, prev: 804.50, exchange: "NASDAQ", high: 820.40, low: 802.00, vol: 6200000, high52: 830.00, low52: 370.20 },
+      "SPY": { name: "SPDR S&P 500 ETF", price: 588.40, prev: 586.00, exchange: "NYSE", high: 591.60, low: 585.20, vol: 62000000, high52: 595.20, low52: 410.00 },
+      "QQQ": { name: "Invesco QQQ Trust", price: 518.20, prev: 515.00, exchange: "NASDAQ", high: 521.10, low: 513.80, vol: 45000000, high52: 525.50, low52: 350.00 },
+      "BABA": { name: "Alibaba Group Holding", price: 112.50, prev: 110.20, exchange: "NYSE", high: 114.00, low: 109.80, vol: 32000000, high52: 125.50, low52: 68.00 },
+      "DIS": { name: "Walt Disney Company", price: 118.40, prev: 116.20, exchange: "NYSE", high: 120.20, low: 115.80, vol: 11000000, high52: 125.70, low52: 78.70 },
+      "UBER": { name: "Uber Technologies", price: 84.80, prev: 82.10, exchange: "NYSE", high: 86.60, low: 81.80, vol: 24000000, high52: 92.00, low52: 40.00 },
+      "ARM": { name: "ARM Holdings plc", price: 152.30, prev: 148.50, exchange: "NASDAQ", high: 154.00, low: 147.20, vol: 16000000, high52: 188.70, low52: 46.50 },
       "SMCI": { name: "Super Micro Computer", price: 23.40, prev: 26.80, exchange: "NASDAQ", high: 27.50, low: 22.80, vol: 89000000, high52: 122.90, low52: 21.00 }
     };
+
 
     return symbols.map(sym => {
       const b = bases[sym] || {
@@ -261,6 +263,16 @@ function setupEventListeners() {
     renderNewsList();
   });
 
+  // News Source Filter Dropdown
+  const newsSourceSelect = document.getElementById('newsSourceSelect');
+  if (newsSourceSelect) {
+    newsSourceSelect.addEventListener('change', (e) => {
+      State.sourceFilter = e.target.value;
+      renderNewsList();
+    });
+  }
+
+
   // Manual refresh button
   document.getElementById('manualRefreshBtn').addEventListener('click', () => {
     const icon = document.querySelector('#manualRefreshBtn i');
@@ -375,7 +387,7 @@ async function loadData() {
   try {
     // Try fetching from real backend
     const API_BASE = window.INVERT_API_URL || '';
-    const quotesRes = await fetch(`${API_BASE}/api/quotes?symbols=${allSymbols.join(',')}`, { signal: AbortSignal.timeout(4000) });
+    const quotesRes = await fetch(`${API_BASE}/api/quotes?symbols=${allSymbols.join(',')}`, { signal: AbortSignal.timeout(9000) });
     const isJson = quotesRes.ok && (quotesRes.headers.get('content-type') || '').includes('application/json');
     if (isJson) {
       const quotes = await quotesRes.json();
@@ -386,37 +398,44 @@ async function loadData() {
         }
         State.quotesData[q.symbol] = q;
       });
+      // Guardar cotizaciones reales en cache para eliminar parpadeos en futuras recargas
+      try {
+        localStorage.setItem('invert_cached_quotes', JSON.stringify(State.quotesData));
+      } catch (e) {}
       State.isOnlineBackend = true;
     } else {
       throw new Error("Backend offline");
     }
 
-    // Fetch news
-    const newsRes = await fetch(`${API_BASE}/api/news?limit=25`, { signal: AbortSignal.timeout(4000) });
+    // Fetch news priorizando las acciones que el usuario está siguiendo (NVDA, AMD, AAPL, etc.)
+    const newsSymbols = allSymbols.slice(0, 8).join(',');
+    const newsRes = await fetch(`${API_BASE}/api/news?symbols=${newsSymbols}&limit=35`, { signal: AbortSignal.timeout(9000) });
     if (newsRes.ok && (newsRes.headers.get('content-type') || '').includes('application/json')) {
       State.newsData = await newsRes.json();
+      updateNewsSourceDropdown();
     }
 
     // Fetch market indices for ribbon
-    const indicesRes = await fetch(`${API_BASE}/api/market-summary`, { signal: AbortSignal.timeout(4000) });
+    const indicesRes = await fetch(`${API_BASE}/api/market-summary`, { signal: AbortSignal.timeout(9000) });
     if (indicesRes.ok && (indicesRes.headers.get('content-type') || '').includes('application/json')) {
       renderTickerTape(await indicesRes.json());
     }
 
   } catch (err) {
-    // Fallback to internal simulation engine
     State.isOnlineBackend = false;
-    const fallbackQuotes = MockMarket.generateQuotes(allSymbols);
-    fallbackQuotes.forEach(q => {
-      if (State.quotesData[q.symbol]) {
-        State.previousPrices[q.symbol] = State.quotesData[q.symbol].price;
-      }
-      State.quotesData[q.symbol] = q;
-    });
+    // CRÍTICO: Si ya tenemos cotizaciones reales en memoria, NUNCA sobreescribir con datos mock antiguos!
+    if (Object.keys(State.quotesData).length === 0) {
+      const fallbackQuotes = MockMarket.generateQuotes(allSymbols);
+      fallbackQuotes.forEach(q => {
+        State.quotesData[q.symbol] = q;
+      });
+    }
     if (State.newsData.length === 0) {
       State.newsData = MockMarket.generateNews();
+      updateNewsSourceDropdown();
     }
   }
+
 
   // Update DOM counts & views
   document.getElementById('countMyWatchlist').innerText = State.watchlist.length;
@@ -667,6 +686,12 @@ function renderNewsList() {
     filtered = filtered.filter(n => n.tickers && n.tickers.includes(State.stockNewsFilter));
   }
 
+  // Filter by publisher / source (Yahoo Finance, WSJ, Bloomberg, etc.)
+  if (State.sourceFilter && State.sourceFilter !== 'all') {
+    const sf = State.sourceFilter.toLowerCase();
+    filtered = filtered.filter(n => (n.publisher || '').toLowerCase().includes(sf));
+  }
+
   // Filter by sentiment pill
   if (State.newsFilter === 'positive') {
     filtered = filtered.filter(n => n.sentiment === 'bullish');
@@ -675,6 +700,7 @@ function renderNewsList() {
   } else if (State.newsFilter === 'breaking') {
     filtered = filtered.slice(0, 5);
   }
+
 
   if (filtered.length === 0) {
     container.innerHTML = `
@@ -730,6 +756,25 @@ function renderNewsList() {
       </div>
     `;
   }).join('');
+}
+
+// Actualizar dinámicamente el selector de fuentes / medios informativos
+function updateNewsSourceDropdown() {
+  const select = document.getElementById('newsSourceSelect');
+  if (!select) return;
+
+  const currentVal = State.sourceFilter || 'all';
+  const rawPublishers = State.newsData.map(n => n.publisher).filter(Boolean);
+  const publishers = Array.from(new Set(rawPublishers)).sort();
+
+  let html = `<option value="all">Todas las Fuentes (${State.newsData.length})</option>`;
+  publishers.forEach(p => {
+    const count = State.newsData.filter(n => n.publisher === p).length;
+    html += `<option value="${p.toLowerCase()}">${p} (${count})</option>`;
+  });
+
+  select.innerHTML = html;
+  select.value = currentVal;
 }
 
 // Filter news for a specific stock
