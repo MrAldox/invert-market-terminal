@@ -449,8 +449,11 @@ function setupModals() {
   const launchFromChartBtn = document.getElementById('modalLaunchAnalysisBtn');
   if (launchFromChartBtn) {
     launchFromChartBtn.addEventListener('click', () => {
+      const sym = State.activeModalSymbol;
       chartModal.classList.remove('open');
-      openAnalysisModal(State.activeModalSymbol, '1d');
+      setTimeout(() => {
+        openAnalysisModal(sym, '1d');
+      }, 50);
     });
   }
 

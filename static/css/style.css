@@ -82,6 +82,13 @@ body.light-theme {
   box-sizing: border-box;
 }
 
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+}
+
 body {
   background-color: var(--bg-main);
   color: var(--text-primary);
@@ -91,7 +98,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
 }
 
 /* Tabular numbers for clean financial tickers */
@@ -1081,6 +1087,10 @@ body.light-theme ::-webkit-scrollbar-thumb {
   animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-container.modal-lg { max-width: 760px; }
+.modal-container.modal-md { max-width: 640px; }
+.modal-container.modal-sm { max-width: 520px; }
+
 @keyframes modal-pop {
   from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -1169,6 +1179,16 @@ body.light-theme ::-webkit-scrollbar-thumb {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   padding: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.modal-chart-canvas-box canvas,
+#interactiveCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  display: block;
 }
 
 .modal-stats-grid {
@@ -2039,6 +2059,19 @@ button, a, input, select {
    MOBILE SCREENS BREAKPOINT (<= 768px)
    ======================================================== */
 @media (max-width: 768px) {
+  /* Prevent horizontal flex/grid blowout */
+  .main-container,
+  .dashboard-layout,
+  .stocks-section,
+  .watchlist-controls-card,
+  .category-tabs,
+  .portfolio-summary-bar,
+  .stocks-grid,
+  .stock-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
   /* Navigation dual labels: Show concise labels on mobile */
   .nav-label-long {
     display: none;
@@ -2437,22 +2470,27 @@ button, a, input, select {
 }
 
 /* ========================================================
-   BOTTOM SHEET MODALS (<= 640px)
+   BOTTOM SHEET MODALS (<= 768px Mobile & Tablet)
    ======================================================== */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .modal-overlay {
-    padding: 0;
-    align-items: flex-end;
+    padding: 0 !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
   }
 
-  .modal-container {
-    width: 100%;
-    max-width: 100%;
-    max-height: 88vh;
-    border-radius: 20px 20px 0 0;
-    border-bottom: none;
-    margin: 0;
-    animation: modal-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  .modal-container,
+  .modal-container.modal-lg,
+  .modal-container.modal-md,
+  .modal-container.modal-sm {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    margin: 0 !important;
+    background-color: var(--bg-surface) !important;
+    animation: modal-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
   @keyframes modal-slide-up {
@@ -2489,6 +2527,7 @@ button, a, input, select {
   .modal-chart-canvas-box {
     height: 220px;
     padding: 6px;
+    overflow: hidden;
   }
 
   .timeframe-group {
@@ -2544,6 +2583,33 @@ button, a, input, select {
     width: 100%;
     max-width: 100%;
   }
+}
+
+/* ========================================================
+   LIGHT THEME MODAL & CARD CONTRAST ENHANCEMENTS
+   ======================================================== */
+body.light-theme .modal-container {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.light-theme .modal-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+body.light-theme .analysis-verdict-box,
+body.light-theme .corridor-card,
+body.light-theme .analysis-stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .gauge-track,
+body.light-theme .prob-bar-track {
+  background: #e2e8f0;
 }
 
 

@@ -10,11 +10,14 @@ const ChartEngine = {
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    const width = rect.width || canvas.width || 280;
-    const height = rect.height || canvas.height || 50;
+    const parentRect = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : null;
+    const width = Math.max(100, Math.round(rect.width > 20 ? rect.width : (parentRect && parentRect.width > 20 ? parentRect.width : 280)));
+    const height = Math.max(30, Math.round(rect.height > 10 ? rect.height : 50));
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
 
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
@@ -93,11 +96,15 @@ const ChartEngine = {
       if (!c) return;
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      const width = rect.width || 800;
-      const height = rect.height || 340;
+      const parentRect = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : null;
+      const parentW = parentRect && parentRect.width > 40 ? Math.round(parentRect.width - 20) : 340;
+      const width = Math.max(200, Math.min(parentW, rect.width > 40 ? Math.round(rect.width) : parentW));
+      const height = Math.round(rect.height > 40 ? rect.height : (parentRect && parentRect.height > 40 ? parentRect.height - 20 : 220));
 
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
 
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
