@@ -21,35 +21,40 @@
   <div class="top-ticker-bar">
     <div class="ticker-tape-wrapper" id="tickerTapeWrapper">
       <!-- Los índices mundiales se insertan dinámicamente aquí -->
-      <div class="ticker-index-item">
+      <div class="ticker-index-item" onclick="openChartModal('^GSPC')" style="cursor: pointer;">
         <span class="ticker-index-name">S&P 500</span>
-        <span class="ticker-index-price">$5,983.20</span>
-        <span class="badge-pct badge-green">+0.42% ▲</span>
+        <span class="ticker-index-price">$7,561.67</span>
+        <span class="badge-pct badge-red">-0.40% ▼</span>
       </div>
-      <div class="ticker-index-item">
+      <div class="ticker-index-item" onclick="openChartModal('^IXIC')" style="cursor: pointer;">
         <span class="ticker-index-name">NASDAQ</span>
-        <span class="ticker-index-price">$19,280.10</span>
-        <span class="badge-pct badge-green">+0.85% ▲</span>
+        <span class="ticker-index-price">$25,136.27</span>
+        <span class="badge-pct badge-red">-0.91% ▼</span>
       </div>
-      <div class="ticker-index-item">
+      <div class="ticker-index-item" onclick="openChartModal('^DJI')" style="cursor: pointer;">
         <span class="ticker-index-name">DOW JONES</span>
-        <span class="ticker-index-price">$43,910.45</span>
-        <span class="badge-pct badge-red">-0.18% ▼</span>
+        <span class="ticker-index-price">$52,347.55</span>
+        <span class="badge-pct badge-green">+0.10% ▲</span>
       </div>
-      <div class="ticker-index-item">
+      <div class="ticker-index-item" onclick="openChartModal('BTC-USD')" style="cursor: pointer;">
         <span class="ticker-index-name">BITCOIN</span>
-        <span class="ticker-index-price">$88,450.00</span>
-        <span class="badge-pct badge-green">+3.80% ▲</span>
+        <span class="ticker-index-price">$64,764.52</span>
+        <span class="badge-pct badge-green">+1.01% ▲</span>
       </div>
-      <div class="ticker-index-item">
-        <span class="ticker-index-name">ORO (Gold)</span>
-        <span class="ticker-index-price">$2,685.20</span>
-        <span class="badge-pct badge-green">+0.25% ▲</span>
+      <div class="ticker-index-item" onclick="openChartModal('ETH-USD')" style="cursor: pointer;">
+        <span class="ticker-index-name">ETHEREUM</span>
+        <span class="ticker-index-price">$1,814.72</span>
+        <span class="badge-pct badge-green">+2.60% ▲</span>
       </div>
-      <div class="ticker-index-item">
+      <div class="ticker-index-item" onclick="openChartModal('GC=F')" style="cursor: pointer;">
+        <span class="ticker-index-name">ORO</span>
+        <span class="ticker-index-price">$3,886.30</span>
+        <span class="badge-pct badge-green">+0.03% ▲</span>
+      </div>
+      <div class="ticker-index-item" onclick="openChartModal('CL=F')" style="cursor: pointer;">
         <span class="ticker-index-name">PETRÓLEO WTI</span>
-        <span class="ticker-index-price">$68.40</span>
-        <span class="badge-pct badge-red">-1.15% ▼</span>
+        <span class="ticker-index-price">$88.56</span>
+        <span class="badge-pct badge-red">-0.20% ▼</span>
       </div>
     </div>
   </div>
