@@ -518,5 +518,13 @@ const TradeIdeaModule = {
   }
 };
 
-// Exponer en objeto global window
+// Exponer en objeto global window y auto-iniciar
 window.TradeIdeaModule = TradeIdeaModule;
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => TradeIdeaModule.init());
+  } else {
+    TradeIdeaModule.init();
+  }
+}

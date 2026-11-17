@@ -449,43 +449,58 @@ function setupModals() {
     });
   });
 
-  // Analysis Modal Tabs (Pronóstico vs Ficha de Operación)
-  const tabForecast = document.getElementById('tabBtnForecast');
-  const tabTradeIdea = document.getElementById('tabBtnTradeIdea');
-  const panelForecast = document.getElementById('panelForecastTab');
-  const panelTradeIdea = document.getElementById('panelTradeIdeaTab');
+  // Global tab switcher accessible anywhere
+  function switchAnalysisTab(tabName) {
+    const tabForecast = document.getElementById('tabBtnForecast');
+    const tabTradeIdea = document.getElementById('tabBtnTradeIdea');
+    const panelForecast = document.getElementById('panelForecastTab');
+    const panelTradeIdea = document.getElementById('panelTradeIdeaTab');
 
-  if (tabForecast && tabTradeIdea) {
-    tabForecast.addEventListener('click', () => {
-      tabForecast.classList.add('active');
-      tabForecast.style.background = 'var(--bg-card)';
-      tabForecast.style.color = 'var(--text-primary)';
-
-      tabTradeIdea.classList.remove('active');
-      tabTradeIdea.style.background = 'transparent';
-      tabTradeIdea.style.color = 'var(--text-muted)';
-
-      if (panelForecast) panelForecast.style.display = 'block';
-      if (panelTradeIdea) panelTradeIdea.style.display = 'none';
-    });
-
-    tabTradeIdea.addEventListener('click', () => {
-      tabTradeIdea.classList.add('active');
-      tabTradeIdea.style.background = 'var(--bg-card)';
-      tabTradeIdea.style.color = 'var(--text-primary)';
-
-      tabForecast.classList.remove('active');
-      tabForecast.style.background = 'transparent';
-      tabForecast.style.color = 'var(--text-muted)';
-
+    if (tabName === 'tradeIdea') {
+      if (tabTradeIdea) {
+        tabTradeIdea.classList.add('active');
+        tabTradeIdea.style.background = 'var(--bg-card)';
+        tabTradeIdea.style.color = 'var(--text-primary)';
+      }
+      if (tabForecast) {
+        tabForecast.classList.remove('active');
+        tabForecast.style.background = 'transparent';
+        tabForecast.style.color = 'var(--text-muted)';
+      }
       if (panelForecast) panelForecast.style.display = 'none';
       if (panelTradeIdea) panelTradeIdea.style.display = 'block';
 
-      if (window.TradeIdeaModule) {
+      if (window.TradeIdeaModule && typeof window.TradeIdeaModule.loadTradeIdea === 'function') {
         window.TradeIdeaModule.loadTradeIdea(State.activeAnalysisSymbol || 'AAPL', State.activeAnalysisTimeframe || '1d');
       }
-    });
+    } else {
+      if (tabForecast) {
+        tabForecast.classList.add('active');
+        tabForecast.style.background = 'var(--bg-card)';
+        tabForecast.style.color = 'var(--text-primary)';
+      }
+      if (tabTradeIdea) {
+        tabTradeIdea.classList.remove('active');
+        tabTradeIdea.style.background = 'transparent';
+        tabTradeIdea.style.color = 'var(--text-muted)';
+      }
+      if (panelForecast) panelForecast.style.display = 'block';
+      if (panelTradeIdea) panelTradeIdea.style.display = 'none';
+    }
   }
+  window.switchAnalysisTab = switchAnalysisTab;
+
+  function openTradeIdeaModal(symbol, timeframe = '1d') {
+    const chartModal = document.getElementById('chartModal');
+    if (chartModal) chartModal.classList.remove('open');
+    openAnalysisModal(symbol, timeframe, 'tradeIdea');
+  }
+  window.openTradeIdeaModal = openTradeIdeaModal;
+
+  const tabForecast = document.getElementById('tabBtnForecast');
+  const tabTradeIdea = document.getElementById('tabBtnTradeIdea');
+  if (tabForecast) tabForecast.addEventListener('click', () => switchAnalysisTab('forecast'));
+  if (tabTradeIdea) tabTradeIdea.addEventListener('click', () => switchAnalysisTab('tradeIdea'));
 
   const launchFromChartBtn = document.getElementById('modalLaunchAnalysisBtn');
   if (launchFromChartBtn) {
@@ -837,7 +852,10 @@ function renderStockCards() {
         <!-- Card Footer Actions -->
         <div class="card-footer">
           <span>Vol: ${formatVolume(stock.volume)}</span>
-          <div style="display:flex; gap:8px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="card-action-btn" onclick="event.stopPropagation(); openTradeIdeaModal('${stock.symbol}')" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); font-weight: 700;" title="Abrir Ficha de Operación Cuantitativa">
+              <i class="fa-solid fa-ticket"></i> Ficha
+            </button>
             <button class="card-action-btn analysis-btn" onclick="event.stopPropagation(); openAnalysisModal('${stock.symbol}')" title="Pronóstico Predictivo y Análisis Cuantitativo">
               <i class="fa-solid fa-wand-magic-sparkles"></i> Análisis
             </button>
@@ -1022,7 +1040,7 @@ function filterNewsForStock(symbol) {
 // ==========================================
 // PREDICTIVE QUANTITATIVE ANALYSIS CONTROLLER
 // ==========================================
-async function openAnalysisModal(symbol, timeframe = '1d') {
+async function openAnalysisModal(symbol, timeframe = '1d', initialTab = 'forecast') {
   try {
     State.activeAnalysisSymbol = symbol;
     State.activeAnalysisTimeframe = timeframe;
@@ -1070,27 +1088,18 @@ async function openAnalysisModal(symbol, timeframe = '1d') {
     // Open modal immediately
     modal.classList.add('open');
 
-    // Default to forecast tab initially
-    const tabF = document.getElementById('tabBtnForecast');
-    const tabT = document.getElementById('tabBtnTradeIdea');
-    const pF = document.getElementById('panelForecastTab');
-    const pT = document.getElementById('panelTradeIdeaTab');
-    if (tabF && tabT && pF && pT) {
-      tabF.classList.add('active');
-      tabF.style.background = 'var(--bg-card)';
-      tabF.style.color = 'var(--text-primary)';
-      tabT.classList.remove('active');
-      tabT.style.background = 'transparent';
-      tabT.style.color = 'var(--text-muted)';
-      pF.style.display = 'block';
-      pT.style.display = 'none';
+    // Switch to initial tab immediately (no waiting)
+    if (typeof window.switchAnalysisTab === 'function') {
+      window.switchAnalysisTab(initialTab);
     }
 
-    await loadStockAnalysis(symbol, timeframe);
+    // Load analysis and trade idea concurrently in parallel
+    const pAnalysis = loadStockAnalysis(symbol, timeframe);
+    const pTradeIdea = (window.TradeIdeaModule && typeof window.TradeIdeaModule.loadTradeIdea === 'function')
+      ? window.TradeIdeaModule.loadTradeIdea(symbol, timeframe)
+      : Promise.resolve();
 
-    if (window.TradeIdeaModule) {
-      window.TradeIdeaModule.loadTradeIdea(symbol, timeframe);
-    }
+    await Promise.all([pAnalysis, pTradeIdea]);
   } catch (err) {
     console.error('Error in openAnalysisModal:', err);
   }

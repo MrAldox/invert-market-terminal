@@ -13,7 +13,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2.2">
 </head>
 <body>
 
@@ -488,10 +488,13 @@
           </div>
         </div>
 
-        <!-- Quick Action: Launch Real-Time Analysis -->
-        <div style="display: flex; justify-content: flex-end; padding-top: 4px;">
+        <!-- Quick Action: Launch Real-Time Analysis & Trade Idea -->
+        <div style="display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 4px;">
+          <button id="modalLaunchTradeIdeaBtn" class="btn-primary" onclick="window.openTradeIdeaModal(State.activeModalSymbol)" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);">
+            <i class="fa-solid fa-ticket"></i> Ver Ficha de Operación
+          </button>
           <button id="modalLaunchAnalysisBtn" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #3b82f6); box-shadow: 0 2px 10px rgba(139, 92, 246, 0.35);">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Ver Análisis Predictivo Cuantitativo
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Ver Pronóstico Predictivo
           </button>
         </div>
 
@@ -633,11 +636,11 @@
       <div class="modal-body">
         <!-- Pestañas de Navegación del Modal de Análisis -->
         <div class="analysis-tabs-nav" style="display: flex; gap: 8px; margin-bottom: 14px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <button class="analysis-tab-btn active" id="tabBtnForecast" style="flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); border: none; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; background: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="fa-solid fa-chart-line" style="color: var(--color-accent);"></i> Pronóstico y Métricas
+          <button class="analysis-tab-btn active" id="tabBtnForecast" onclick="window.switchAnalysisTab('forecast')" type="button" style="flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); border: none; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; background: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-chart-line" style="color: var(--color-accent); pointer-events: none;"></i> Pronóstico y Métricas
           </button>
-          <button class="analysis-tab-btn" id="tabBtnTradeIdea" style="flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); border: none; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="fa-solid fa-ticket" style="color: #10b981;"></i> Ficha de Operación
+          <button class="analysis-tab-btn" id="tabBtnTradeIdea" onclick="window.switchAnalysisTab('tradeIdea')" type="button" style="flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); border: none; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-ticket" style="color: #10b981; pointer-events: none;"></i> Ficha de Operación
           </button>
         </div>
 
@@ -892,9 +895,9 @@
     INVERT Market Terminal Pro &bull; Datos bursátiles con cotizaciones en tiempo real y análisis de noticias de mercado &bull; Diseñado para alta precisión financiera.
   </footer>
 
-  <!-- Scripts -->
-  <script src="js/chart.js"></script>
-  <script src="js/trade-idea.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Scripts con Cache Buster v2.2 -->
+  <script src="js/chart.js?v=2.2"></script>
+  <script src="js/trade-idea.js?v=2.2"></script>
+  <script src="js/app.js?v=2.2"></script>
 </body>
 </html>
