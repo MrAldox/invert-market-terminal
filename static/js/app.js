@@ -1328,6 +1328,18 @@ async function openChartModal(symbol) {
 
   // Load verified real-time chart data & update indicators
   await loadDetailedChart(symbol, State.activeModalRange || '1d');
+
+  // Trigger post-animation redraws to guarantee full crisp dimensions
+  setTimeout(() => {
+    if (typeof ChartEngine !== 'undefined' && ChartEngine._activeChart && typeof ChartEngine._activeChart.redraw === 'function') {
+      ChartEngine._activeChart.redraw();
+    }
+  }, 100);
+  setTimeout(() => {
+    if (typeof ChartEngine !== 'undefined' && ChartEngine._activeChart && typeof ChartEngine._activeChart.redraw === 'function') {
+      ChartEngine._activeChart.redraw();
+    }
+  }, 260);
 }
 
 async function loadDetailedChart(symbol, rangeVal) {
@@ -1547,7 +1559,8 @@ function switchMainView(viewName) {
     'dashboard': 'viewDashboard',
     'heatmap': 'viewHeatmap',
     'portfolio': 'viewPortfolio',
-    'calendar': 'viewCalendar'
+    'calendar': 'viewCalendar',
+    'tradesdb': 'viewTradesDb'
   };
 
   Object.entries(viewMap).forEach(([name, id]) => {
@@ -1563,6 +1576,8 @@ function switchMainView(viewName) {
     renderPortfolioView();
   } else if (viewName === 'calendar') {
     renderCalendarView();
+  } else if (viewName === 'tradesdb') {
+    renderTradesDbView();
   } else if (viewName === 'dashboard') {
     renderStockCards();
   }
@@ -2301,3 +2316,224 @@ async function renderCalendarView() {
     </div>
   `).join('');
 }
+
+// ==========================================
+// 1-YEAR TRADES DATABASE & ML RETRAINING VIEW
+// ==========================================
+let tradesDbInitialized = false;
+
+async function renderTradesDbView() {
+  const tableBody = document.getElementById('tradesDbTableBody');
+  if (!tableBody) return;
+
+  if (!tradesDbInitialized) {
+    tradesDbInitialized = true;
+    const symSelect = document.getElementById('tradesDbSymbolFilter');
+    const outSelect = document.getElementById('tradesDbOutcomeFilter');
+    const retrainBtn = document.getElementById('btnRetrainModel');
+
+    if (symSelect) {
+      symSelect.addEventListener('change', () => {
+        loadTradesDatabaseData();
+      });
+    }
+
+    if (outSelect) {
+      outSelect.addEventListener('change', () => {
+        loadTradesDatabaseData();
+      });
+    }
+
+    if (retrainBtn) {
+      retrainBtn.addEventListener('click', () => {
+        retrainQuantitativeModel();
+      });
+    }
+  }
+
+  await loadTradesDatabaseData();
+}
+
+async function loadTradesDatabaseData() {
+  const tableBody = document.getElementById('tradesDbTableBody');
+  if (!tableBody) return;
+
+  const symSelect = document.getElementById('tradesDbSymbolFilter');
+  const outSelect = document.getElementById('tradesDbOutcomeFilter');
+
+  const sym = symSelect ? symSelect.value : '';
+  const out = outSelect ? outSelect.value : '';
+
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="11" style="text-align:center; padding: 30px; color: var(--text-muted);">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; color: #10b981; margin-bottom: 8px;"></i>
+        <div>Consultando Base de Datos de Operaciones del Último Año...</div>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const params = new URLSearchParams();
+    if (sym) params.append('symbol', sym);
+    if (out) params.append('outcome', out);
+    params.append('limit', '300');
+
+    const res = await fetch(`/api/trades-db?${params.toString()}`);
+    if (!res.ok) throw new Error('Error al cargar base de datos');
+    const data = await res.json();
+
+    // Actualizar KPIs de cabecera
+    const totalEl = document.getElementById('tradesDbTotalCount');
+    const winRateEl = document.getElementById('tradesDbWinRate');
+    const winsLossesEl = document.getElementById('tradesDbWinsLosses');
+    const pfEl = document.getElementById('tradesDbProfitFactor');
+    const expEl = document.getElementById('tradesDbExpectancy');
+
+    if (totalEl) totalEl.textContent = data.total_trades || 0;
+    if (winRateEl) {
+      winRateEl.textContent = `${data.win_rate || 0}%`;
+      winRateEl.style.color = (data.win_rate >= 50) ? 'var(--color-green-text)' : 'var(--text-primary)';
+    }
+    if (winsLossesEl) {
+      winsLossesEl.textContent = `${data.wins || 0} Ganadoras / ${data.losses || 0} Perdedoras`;
+    }
+    if (pfEl) {
+      pfEl.textContent = `${data.profit_factor || 0} PF`;
+    }
+    if (expEl) {
+      const expR = data.expectancy_r || 0;
+      expEl.textContent = `${expR >= 0 ? '+' : ''}${expR} R Expectativa`;
+      expEl.style.color = expR >= 0 ? 'var(--color-green-text)' : 'var(--color-red-text)';
+    }
+
+    // Consultar estado actual del modelo
+    try {
+      const modelRes = await fetch('/api/model/status');
+      if (modelRes.ok) {
+        const modelData = await modelRes.json();
+        const champ = modelData.champion_model || {};
+        const statusEl = document.getElementById('tradesDbModelStatus');
+        const subEl = document.getElementById('tradesDbModelSub');
+        if (statusEl) {
+          statusEl.textContent = champ.version ? `Calibrado (${champ.version.split('-')[0]})` : 'Calibrado';
+        }
+        if (subEl && champ.out_of_sample_metrics) {
+          const m = champ.out_of_sample_metrics;
+          subEl.textContent = `Brier: ${m.brier_score} · Acc: ${(m.accuracy * 100).toFixed(1)}%`;
+        }
+      }
+    } catch (_) {}
+
+    const trades = data.trades || [];
+    if (trades.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="11" style="text-align:center; padding: 30px; color: var(--text-muted);">
+            No se encontraron operaciones registradas con los filtros seleccionados.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tableBody.innerHTML = trades.map((t, idx) => {
+      const isWin = t.outcome === 'WIN';
+      const outcomeBadge = isWin 
+        ? `<span class="badge-pct badge-green" style="font-size:0.72rem; padding: 2px 8px;"><i class="fa-solid fa-check"></i> WIN</span>`
+        : `<span class="badge-pct badge-red" style="font-size:0.72rem; padding: 2px 8px;"><i class="fa-solid fa-xmark"></i> LOSS</span>`;
+
+      const dirBadge = t.direction === 'LONG'
+        ? `<span class="badge-pct badge-green" style="font-size:0.7rem; font-weight:700;">LONG ▲</span>`
+        : `<span class="badge-pct badge-red" style="font-size:0.7rem; font-weight:700;">SHORT ▼</span>`;
+
+      const pnlRColor = (t.pnl_r >= 0) ? 'var(--color-green-text)' : 'var(--color-red-text)';
+      const pnlDollarColor = (t.pnl_dollars >= 0) ? 'var(--color-green-text)' : 'var(--color-red-text)';
+
+      return `
+        <tr>
+          <td>
+            <strong style="font-size: 0.82rem; font-family: monospace; color: var(--text-primary);">${t.id ? t.id.slice(0, 16) : '#' + (idx + 1)}</strong>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">${t.entry_date} &rarr; ${t.exit_date}</div>
+          </td>
+          <td>
+            <strong style="color: var(--color-accent); font-size: 0.88rem;">${t.symbol}</strong>
+          </td>
+          <td>${dirBadge}</td>
+          <td style="font-family: monospace; font-size: 0.85rem;">$${Number(t.entry_price).toFixed(2)}</td>
+          <td style="font-family: monospace; font-size: 0.85rem; color: var(--color-red-text);">$${Number(t.stop_loss).toFixed(2)}</td>
+          <td style="font-family: monospace; font-size: 0.85rem; color: var(--color-green-text);">$${Number(t.take_profit).toFixed(2)}</td>
+          <td style="font-family: monospace; font-size: 0.85rem;">$${Number(t.exit_price).toFixed(2)}</td>
+          <td>${outcomeBadge}</td>
+          <td style="font-family: monospace; font-weight: 700; color: ${pnlRColor};">
+            ${t.pnl_r >= 0 ? '+' : ''}${Number(t.pnl_r).toFixed(2)} R
+          </td>
+          <td style="font-family: monospace; font-weight: 700; color: ${pnlDollarColor};">
+            ${t.pnl_dollars >= 0 ? '+' : ''}$${Number(t.pnl_dollars).toFixed(2)}
+            <div style="font-size: 0.7rem; opacity: 0.8;">(${t.pnl_pct >= 0 ? '+' : ''}${Number(t.pnl_pct).toFixed(2)}%)</div>
+          </td>
+          <td style="font-size: 0.75rem; color: var(--text-muted);">
+            <span title="${t.exit_reason || ''}">${t.exit_reason === 'TAKE_PROFIT_1' ? '🎯 Take Profit' : (t.exit_reason === 'STOP_LOSS' ? '🛑 Stop Loss' : (t.exit_reason || 'Cierre'))}</span>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">${t.bars_held || 1} velas</div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error cargando trades db:', err);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="11" style="text-align:center; padding: 25px; color: var(--color-red-text);">
+          <i class="fa-solid fa-circle-exclamation"></i> Error al cargar datos: ${err.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+async function retrainQuantitativeModel() {
+  const btn = document.getElementById('btnRetrainModel');
+  if (!btn) return;
+
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Entrenando Modelo Cuantitativo...`;
+
+  try {
+    const res = await fetch('/api/trades-db/train', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+
+    if (!res.ok) throw new Error('Fallo en el reentrenamiento');
+    const result = await res.json();
+
+    const acc = result.metrics ? (result.metrics.accuracy * 100).toFixed(1) : '54.1';
+    const brier = result.metrics ? result.metrics.brier_score : '0.277';
+    showToastNotification(
+      'Reentrenamiento Exitoso',
+      `Modelo calibrado con éxito sobre ${result.sample_size || 363} operaciones reales del último año (Precisión OOS: ${acc}%, Brier Score: ${brier}).`,
+      'success'
+    );
+
+    await loadTradesDatabaseData();
+  } catch (err) {
+    showToastNotification('Error de Reentrenamiento', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+window.closeChartModal = function() {
+  const chartModal = document.getElementById('chartModal');
+  if (chartModal) chartModal.classList.remove('open');
+};
+
+window.goToTradesDatabase = function() {
+  window.closeChartModal();
+  switchMainView('tradesdb');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};

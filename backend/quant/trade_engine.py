@@ -340,11 +340,12 @@ def generate_trade_idea(
     direction = "NO_OPERAR"
     no_trade_reason = None
 
+    max_contradictions = thresholds.get("max_contradictions", 3)
     if adx_val is not None and adx_val < min_adx:
         no_trade_reason = f"Fuerza direccional insuficiente (ADX {adx_val:.1f} < {min_adx}). Mercado sin tendencia definida."
     elif weekly_aligned is False:
         no_trade_reason = "Conflicto con la tendencia semanal. Prohibido operar contra el marco temporal superior."
-    elif len(contradictions) >= 2:
+    elif len(contradictions) > max_contradictions:
         no_trade_reason = f"Divergencias técnicas excesivas ({len(contradictions)} contradicciones detectadas)."
     elif total_score >= min_long_score:
         direction = "LONG"
@@ -411,34 +412,10 @@ def generate_trade_idea(
         tp1_price = round(entry_market + (1.5 * risk_distance), 2)
         tp2_price = round(entry_market + (3.0 * risk_distance), 2)
 
-        # Ajuste si hay resistencia inmediata R1 menor que TP1
+        # Advertencia prudencial si hay resistencia inmediata R1 menor que TP1
         r1 = pivots["r1"]
         if r1 > entry_market and r1 < tp1_price:
-            # Si R1 está demasiado cerca (< 1.5R), el R:B se ve comprometido -> NO_OPERAR
-            if (r1 - entry_market) / risk_distance < min_rr:
-                return {
-                    "symbol": symbol.upper(),
-                    "timeframe": timeframe,
-                    "data_source": chart_data.get("data_source", DATA_SOURCE_LIVE),
-                    "last_updated_ts": chart_data.get("last_updated_ts"),
-                    "status": "OPERABLE",
-                    "direction": "NO_OPERAR",
-                    "setup_name": "Resistencia R1 Próxima Limita Ratio R:B",
-                    "entry": None,
-                    "stop_loss": None,
-                    "take_profit_1": None,
-                    "take_profit_2": None,
-                    "risk_reward": None,
-                    "sizing": None,
-                    "confidence": {"value": None, "is_calibrated": False, "label": "Sin calibrar"},
-                    "score_breakdown": score_breakdown,
-                    "total_score": total_score,
-                    "reasons": reasons,
-                    "contradictions": contradictions + [f"Resistencia R1 ({r1}) reduce el Ratio Riesgo:Beneficio por debajo de {min_rr}."],
-                    "warnings": warnings,
-                    "invalidation": "Cancelada por R:B insuficiente ante resistencia inmediata.",
-                    "disclaimer": disclaimer
-                }
+            warnings.append(f"Resistencia intermedia R1 (${r1:.2f}) próxima antes de TP1 (${tp1_price:.2f}). Se recomienda vigilar toma parcial o proteger breakeven ante desaceleración.")
 
         invalidation_text = f"Cierre de vela de {timeframe} por debajo de {stop_price} o pérdida de soporte S1 ({s1})."
         setup_name = "Impulso Alcista con Confluencia de Medias y Soporte"
@@ -459,32 +436,10 @@ def generate_trade_idea(
         tp1_price = round(entry_market - (1.5 * risk_distance), 2)
         tp2_price = round(entry_market - (3.0 * risk_distance), 2)
 
+        # Advertencia prudencial si hay soporte inmediato S1 mayor que TP1
         s1 = pivots["s1"]
         if s1 < entry_market and s1 > tp1_price:
-            if (entry_market - s1) / risk_distance < min_rr:
-                return {
-                    "symbol": symbol.upper(),
-                    "timeframe": timeframe,
-                    "data_source": chart_data.get("data_source", DATA_SOURCE_LIVE),
-                    "last_updated_ts": chart_data.get("last_updated_ts"),
-                    "status": "OPERABLE",
-                    "direction": "NO_OPERAR",
-                    "setup_name": "Soporte S1 Próximo Limita Ratio R:B",
-                    "entry": None,
-                    "stop_loss": None,
-                    "take_profit_1": None,
-                    "take_profit_2": None,
-                    "risk_reward": None,
-                    "sizing": None,
-                    "confidence": {"value": None, "is_calibrated": False, "label": "Sin calibrar"},
-                    "score_breakdown": score_breakdown,
-                    "total_score": total_score,
-                    "reasons": reasons,
-                    "contradictions": contradictions + [f"Soporte S1 ({s1}) reduce el Ratio R:B por debajo de {min_rr}."],
-                    "warnings": warnings,
-                    "invalidation": "Cancelada por R:B insuficiente ante soporte inmediato.",
-                    "disclaimer": disclaimer
-                }
+            warnings.append(f"Soporte intermedio S1 (${s1:.2f}) próximo antes de TP1 (${tp1_price:.2f}). Se recomienda vigilar toma parcial o proteger breakeven ante rechazo.")
 
         invalidation_text = f"Cierre de vela de {timeframe} por encima de {stop_price} o superación de resistencia R1 ({r1})."
         setup_name = "Presión Bajista con Ruptura y Confluencia de Resistencia"

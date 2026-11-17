@@ -158,6 +158,11 @@
           <span class="nav-label-long">Calendario & Earnings</span>
           <span class="nav-label-short">Calendario</span>
         </button>
+        <button class="nav-tab-btn" data-view="tradesdb" id="navViewTradesDb">
+          <i class="fa-solid fa-database" style="color: #10b981;"></i>
+          <span class="nav-label-long">Base de Datos (1 Año)</span>
+          <span class="nav-label-short">Trades 1A</span>
+        </button>
       </div>
 
       <div class="nav-quick-info">
@@ -430,6 +435,94 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ================= VIEW 5: TRADES DATABASE (1 AÑO) & MODEL TRAINING ================= -->
+    <div class="view-container" id="viewTradesDb">
+      <!-- Header KPI Cards -->
+      <div class="portfolio-header-box">
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-database" style="color: #10b981;"></i> Total Operaciones (1 Año)</span>
+          <span class="kpi-val" id="tradesDbTotalCount">363</span>
+          <span class="kpi-sub" id="tradesDbPeriodSub" style="color: var(--text-muted);">Backtest 365 días sin Lookahead</span>
+        </div>
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-bullseye" style="color: var(--color-accent);"></i> Tasa de Acierto (Win Rate)</span>
+          <span class="kpi-val" id="tradesDbWinRate" style="color: var(--color-green-text);">44.1%</span>
+          <span class="kpi-sub" id="tradesDbWinsLosses" style="color: var(--text-muted);">160 Ganadoras / 203 Perdedoras</span>
+        </div>
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-scale-balanced" style="color: #f59e0b;"></i> Profit Factor & Esperanza</span>
+          <span class="kpi-val" id="tradesDbProfitFactor">0.89 PF</span>
+          <span class="kpi-sub" id="tradesDbExpectancy" style="color: var(--color-green-text);">+3.07 R Expectativa</span>
+        </div>
+        <div class="portfolio-kpi-card">
+          <span class="kpi-title"><i class="fa-solid fa-brain" style="color: #a855f7;"></i> Modelo de Machine Learning</span>
+          <span class="kpi-val" id="tradesDbModelStatus" style="font-size: 1.1rem; color: #10b981;">Calibrado</span>
+          <span class="kpi-sub" id="tradesDbModelSub" style="color: var(--text-muted);">Gradient Boosting + Isotonic</span>
+        </div>
+      </div>
+
+      <!-- Action & Filter Bar -->
+      <div class="portfolio-actions-bar" style="flex-wrap: wrap; gap: 12px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap: wrap;">
+          <div>
+            <label for="tradesDbSymbolFilter" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-right: 6px;">Activo:</label>
+            <select id="tradesDbSymbolFilter" class="select-sort" style="min-width: 130px;">
+              <option value="">Todos los Activos</option>
+              <option value="NVDA">NVDA</option>
+              <option value="AAPL">AAPL</option>
+              <option value="TSLA">TSLA</option>
+              <option value="MSFT">MSFT</option>
+              <option value="AMZN">AMZN</option>
+              <option value="GOOGL">GOOGL</option>
+              <option value="META">META</option>
+              <option value="AMD">AMD</option>
+              <option value="PLTR">PLTR</option>
+              <option value="SPY">SPY</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="tradesDbOutcomeFilter" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-right: 6px;">Resultado:</label>
+            <select id="tradesDbOutcomeFilter" class="select-sort" style="min-width: 140px;">
+              <option value="">Todos (WIN y LOSS)</option>
+              <option value="WIN">Solo Ganadoras (WIN)</option>
+              <option value="LOSS">Solo Perdedoras (LOSS)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; margin-left:auto;">
+          <button class="btn-primary" id="btnRetrainModel" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3); font-weight: 700; font-size: 0.85rem; padding: 8px 16px;">
+            <i class="fa-solid fa-rotate"></i> Reentrenar Modelo con 1 Año
+          </button>
+        </div>
+      </div>
+
+      <!-- Trades History Table -->
+      <div class="portfolio-table-box" style="overflow-x: auto;">
+        <table class="portfolio-table">
+          <thead>
+            <tr>
+              <th>ID / Entrada</th>
+              <th>Activo</th>
+              <th>Dirección</th>
+              <th>Precio Entrada</th>
+              <th>Stop Loss</th>
+              <th>Take Profit</th>
+              <th>Precio Salida</th>
+              <th>Resultado</th>
+              <th>Retorno (R)</th>
+              <th>P&L Neto ($)</th>
+              <th>Motivo Cierre</th>
+            </tr>
+          </thead>
+          <tbody id="tradesDbTableBody">
+            <!-- Dynamic rows populated via loadTradesDatabaseView() -->
+          </tbody>
+        </table>
       </div>
     </div>
 

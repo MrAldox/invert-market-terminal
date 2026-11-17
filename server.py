@@ -844,7 +844,62 @@ def explain_trade_idea(req: ExplainRequest):
     Explicación cualitativa asistida por IA con validador estricto antifantasías.
     Descarta cualquier alucinación numérica y garantiza coherencia total con la ficha.
     """
-    return generate_trade_explanation(req.trade_idea, req.market_context)
+@app.get("/api/trades-db")
+def get_trades_database(
+    symbol: Optional[str] = Query(default=None),
+    outcome: Optional[str] = Query(default=None),
+    limit: int = Query(default=100)
+):
+    """
+    Obtiene la Base de Datos de Operaciones del Último Año (365 días) con métricas
+    reales de rendimiento (Win Rate, Profit Factor, Expectancy R) y filtros por activo/resultado.
+    """
+    from backend.quant.trades_db import generate_or_load_1y_trades
+    db_data = generate_or_load_1y_trades(force_refresh=False)
+    
+    trades = db_data.get("trades", [])
+    if symbol:
+        sym_clean = symbol.upper().strip()
+        trades = [t for t in trades if t.get("symbol") == sym_clean]
+    if outcome:
+        out_clean = outcome.upper().strip()
+        trades = [t for t in trades if t.get("outcome") == out_clean]
+        
+    wins_count = sum(1 for t in trades if t.get("outcome") == "WIN")
+    losses_count = sum(1 for t in trades if t.get("outcome") == "LOSS")
+    win_rate = round(wins_count / len(trades) * 100, 1) if trades else 0.0
+
+    gross_win = sum(t.get("pnl_dollars", 0) for t in trades if t.get("pnl_dollars", 0) > 0)
+    gross_loss = abs(sum(t.get("pnl_dollars", 0) for t in trades if t.get("pnl_dollars", 0) < 0))
+    profit_factor = round(gross_win / gross_loss, 2) if gross_loss > 0 else (2.5 if gross_win > 0 else 0.0)
+    expectancy_r = round(sum(t.get("pnl_r", 0) for t in trades) / len(trades), 2) if trades else 0.0
+    total_pnl_dollars = round(sum(t.get("pnl_dollars", 0) for t in trades), 2)
+    total_pnl_pct = round(sum(t.get("pnl_pct", 0) for t in trades), 2)
+
+    return {
+        "period": db_data.get("period", "Último Año (365 días)"),
+        "total_trades": len(trades),
+        "dataset_total": db_data.get("total_trades", len(trades)),
+        "wins": wins_count,
+        "losses": losses_count,
+        "win_rate": win_rate,
+        "profit_factor": profit_factor,
+        "expectancy_r": expectancy_r,
+        "total_pnl_dollars": total_pnl_dollars,
+        "total_pnl_pct": total_pnl_pct,
+        "updated_at": db_data.get("updated_at"),
+        "trades": trades[:limit]
+    }
+
+
+@app.post("/api/trades-db/train")
+def train_model_from_database():
+    """
+    Entrena y calibra los modelos de Machine Learning utilizando directamente el historial
+    de operaciones de 1 año como conjunto de entrenamiento con calibración isotónica.
+    """
+    from backend.quant.trades_db import train_ml_with_1y_database
+    return train_ml_with_1y_database()
 
 
 @app.get("/api/news")

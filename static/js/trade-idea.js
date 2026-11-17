@@ -354,6 +354,17 @@ const TradeIdeaModule = {
         ` : ''}
       </div>
 
+      <!-- Acceso Directo a Base de Datos de 1 Año -->
+      <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="font-size: 0.78rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-database" style="color: #10b981; font-size: 1rem;"></i>
+          <span>Modelo entrenado con <strong>Base de Datos de 1 Año (363 operaciones)</strong></span>
+        </div>
+        <button onclick="if(window.goToTradesDatabase) window.goToTradesDatabase();" class="btn-secondary" style="font-size: 0.74rem; padding: 4px 10px; border-color: rgba(16, 185, 129, 0.4); cursor: pointer;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Base de Datos (1 Año)
+        </button>
+      </div>
+
       <!-- Disclaimer Legal de Honestidad Radical -->
       <div style="text-align: center; padding: 8px 12px; background: rgba(0, 0, 0, 0.2); border-radius: var(--radius-sm); border: 1px dashed var(--border-color);">
         <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">

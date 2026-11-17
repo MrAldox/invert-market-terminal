@@ -215,6 +215,8 @@ def run_single_symbol_backtest(
                     "exit_time": next_bar["time"],
                     "entry_price": round(entry_exec, 2),
                     "exit_price": round(exit_price, 2),
+                    "stop_loss": round(active_trade["stop_loss"], 2),
+                    "take_profit": round(active_trade["tp1"], 2),
                     "shares": shares,
                     "net_pnl": round(net_pnl, 2),
                     "pnl_in_r": round(pnl_in_r, 2),

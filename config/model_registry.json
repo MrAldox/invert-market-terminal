@@ -1,12 +1,12 @@
 {
   "champion": {
-    "version": "v1794949315-calibrated",
-    "model_type": "GradientBoostingClassifier + IsotonicCalibration",
-    "calibrated_at": "2026-11-17T21:01:55Z",
+    "version": "v1794956626-1y-calibrated",
+    "model_type": "GradientBoostingClassifier + IsotonicCalibration (1 A\u00f1o)",
+    "calibrated_at": "2026-11-17T23:03:46Z",
     "out_of_sample_metrics": {
-      "brier_score": 0.0032,
-      "log_loss": 0.0347,
-      "accuracy": 1.0
+      "brier_score": 0.2774,
+      "log_loss": 0.752,
+      "accuracy": 0.541
     },
     "features": [
       "rsi",
@@ -17,7 +17,7 @@
       "score",
       "direction_long"
     ],
-    "hash": "7edfc09467d0bb4a6d8678d1bffde361"
+    "hash": "1y-1794956626"
   },
   "history": [
     {
@@ -39,6 +39,32 @@
         "direction_long"
       ],
       "hash": "e10adc3949ba59abbe56e057f20f883e"
+    },
+    {
+      "version": "v1794956216-1y-calibrated",
+      "model_type": "GradientBoostingClassifier + IsotonicCalibration (1 A\u00f1o)",
+      "calibrated_at": "2026-11-17T22:56:56Z",
+      "out_of_sample_metrics": {
+        "brier_score": 0.2774,
+        "log_loss": 0.752,
+        "accuracy": 0.541
+      },
+      "features": [
+        "rsi",
+        "adx",
+        "atr_ratio",
+        "macd_hist",
+        "rvol",
+        "score",
+        "direction_long"
+      ],
+      "hash": "1y-1794956216"
     }
-  ]
+  ],
+  "drift_monitor": {
+    "status": "NORMAL",
+    "confidence_display": "Calibrada",
+    "recent_sample_size": 363,
+    "drift_detected": false
+  }
 }

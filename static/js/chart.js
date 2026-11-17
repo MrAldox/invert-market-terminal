@@ -98,16 +98,19 @@ const ChartEngine = {
       const c = this._activeChart;
       if (!c) return;
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const parentRect = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : null;
-      const parentW = parentRect && parentRect.width > 40 ? Math.round(parentRect.width - 20) : 340;
-      const width = Math.max(200, Math.min(parentW, rect.width > 40 ? Math.round(rect.width) : parentW));
-      const height = Math.round(rect.height > 40 ? rect.height : (parentRect && parentRect.height > 40 ? parentRect.height - 20 : 220));
+
+      const parent = canvas.parentElement;
+      const parentRect = parent ? parent.getBoundingClientRect() : null;
+      const clientW = parent ? parent.clientWidth : 0;
+      const clientH = parent ? parent.clientHeight : 0;
+
+      const width = Math.max(280, clientW > 50 ? clientW : (parentRect && parentRect.width > 50 ? Math.round(parentRect.width) : 600));
+      const height = Math.max(180, clientH > 50 ? clientH : (parentRect && parentRect.height > 50 ? Math.round(parentRect.height) : 260));
 
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
 
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
@@ -370,6 +373,19 @@ const ChartEngine = {
 
     this._activeChart.redraw = draw;
     draw();
+
+    // ResizeObserver para adaptar el canvas en tiempo real al abrir modal o cambiar pantalla
+    if (canvas.parentElement && !canvas._resizeObserverAttached && typeof ResizeObserver !== 'undefined') {
+      try {
+        const ro = new ResizeObserver(() => {
+          if (this._activeChart && typeof this._activeChart.redraw === 'function') {
+            requestAnimationFrame(() => this._activeChart.redraw());
+          }
+        });
+        ro.observe(canvas.parentElement);
+        canvas._resizeObserverAttached = true;
+      } catch (err) {}
+    }
   },
 
   setTradeOverlays(overlays) {
