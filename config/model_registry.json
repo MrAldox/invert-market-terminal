@@ -1,0 +1,44 @@
+{
+  "champion": {
+    "version": "v1794949315-calibrated",
+    "model_type": "GradientBoostingClassifier + IsotonicCalibration",
+    "calibrated_at": "2026-11-17T21:01:55Z",
+    "out_of_sample_metrics": {
+      "brier_score": 0.0032,
+      "log_loss": 0.0347,
+      "accuracy": 1.0
+    },
+    "features": [
+      "rsi",
+      "adx",
+      "atr_ratio",
+      "macd_hist",
+      "rvol",
+      "score",
+      "direction_long"
+    ],
+    "hash": "7edfc09467d0bb4a6d8678d1bffde361"
+  },
+  "history": [
+    {
+      "version": "v1.0.0-baseline",
+      "model_type": "GradientBoostingClassifier + IsotonicCalibration",
+      "calibrated_at": "2026-11-17T21:01:55Z",
+      "out_of_sample_metrics": {
+        "brier_score": 0.182,
+        "log_loss": 0.512,
+        "accuracy": 0.585
+      },
+      "features": [
+        "rsi",
+        "adx",
+        "atr_ratio",
+        "macd_hist",
+        "rvol",
+        "score",
+        "direction_long"
+      ],
+      "hash": "e10adc3949ba59abbe56e057f20f883e"
+    }
+  ]
+}

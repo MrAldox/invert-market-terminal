@@ -10,3 +10,5 @@ ENV/
 .vscode/
 .idea/
 *.log
+cache/
+.pytest_cache/

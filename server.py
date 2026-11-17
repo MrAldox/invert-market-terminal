@@ -6,11 +6,24 @@ Servidor FastAPI para cotizaciones en tiempo real, histórico de precios y notic
 import time
 import os
 import requests
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+
+from pydantic import BaseModel
+from backend.quant.integrity import (
+    validate_and_sanitize_points,
+    check_signal_eligibility,
+    DATA_SOURCE_LIVE,
+    DATA_SOURCE_CACHE,
+    DATA_SOURCE_SYNTHETIC
+)
+from backend.quant.trade_engine import generate_trade_idea
+from backend.quant.backtest import execute_full_backtest, BACKTEST_RESULTS
+from backend.quant.ml_model import get_model_status_summary
+from backend.quant.explainer import generate_trade_explanation
 
 app = FastAPI(title="INVERT Market Terminal API", version="1.0.0")
 
@@ -104,7 +117,9 @@ def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m")
     if cache_key in CACHE["charts"]:
         entry = CACHE["charts"][cache_key]
         if now - entry["time"] < CACHE_TTL:
-            return entry["data"]
+            cached_data = dict(entry["data"])
+            cached_data["data_source"] = DATA_SOURCE_CACHE
+            return cached_data
 
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range_val}&interval={interval}"
     try:
@@ -112,7 +127,7 @@ def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m")
         if r.status_code == 200:
             res = r.json().get("chart", {}).get("result", [])
             if not res:
-                return None
+                return generate_fallback_quote(symbol)
             data = res[0]
             meta = data.get("meta", {})
             timestamps = data.get("timestamp", [])
@@ -123,11 +138,11 @@ def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m")
             lows = indicators.get("low", [])
             volumes = indicators.get("volume", [])
 
-            points = []
+            raw_points = []
             for i in range(len(timestamps)):
                 c = closes[i] if i < len(closes) else None
                 if c is not None:
-                    points.append({
+                    raw_points.append({
                         "time": timestamps[i],
                         "open": round(opens[i], 2) if i < len(opens) and opens[i] is not None else round(c, 2),
                         "high": round(highs[i], 2) if i < len(highs) and highs[i] is not None else round(c, 2),
@@ -135,6 +150,9 @@ def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m")
                         "close": round(c, 2),
                         "volume": volumes[i] if i < len(volumes) and volumes[i] is not None else 0
                     })
+
+            # Saneamiento y validación de integridad
+            points, data_warnings = validate_and_sanitize_points(raw_points)
 
             price = meta.get("regularMarketPrice")
             if price is None and points:
@@ -185,7 +203,10 @@ def fetch_symbol_chart(symbol: str, range_val: str = "1d", interval: str = "5m")
                 "fiftyTwoWeekHigh": round(meta.get("fiftyTwoWeekHigh", 0), 2),
                 "fiftyTwoWeekLow": round(meta.get("fiftyTwoWeekLow", 0), 2),
                 "sparkline": sparkline,
-                "history": points
+                "history": points,
+                "data_source": DATA_SOURCE_LIVE,
+                "last_updated_ts": int(now),
+                "data_warnings": data_warnings
             }
 
             CACHE["charts"][cache_key] = {"time": now, "data": item}
@@ -226,6 +247,7 @@ def generate_fallback_quote(symbol: str):
     change = price - prev
     change_pct = (change / prev) * 100
     sparkline = [round(prev + (change * (i / 15.0)), 2) for i in range(16)]
+    now_ts = int(time.time())
     return {
         "symbol": symbol.upper(),
         "name": base["name"],
@@ -241,7 +263,10 @@ def generate_fallback_quote(symbol: str):
         "fiftyTwoWeekHigh": round(price * 1.25, 2),
         "fiftyTwoWeekLow": round(price * 0.75, 2),
         "sparkline": sparkline,
-        "history": [{"time": int(time.time()) - (15-i)*300, "close": s} for i, s in enumerate(sparkline)]
+        "history": [{"time": now_ts - (15-i)*300, "open": s, "high": s, "low": s, "close": s, "volume": 1000} for i, s in enumerate(sparkline)],
+        "data_source": DATA_SOURCE_SYNTHETIC,
+        "last_updated_ts": now_ts,
+        "data_warnings": ["Datos sintéticos generados en modo fallback local por indisponibilidad del proveedor."]
     }
 
 
@@ -698,9 +723,128 @@ def get_analysis(symbol: str = Query(...), timeframe: str = Query(default="1d"))
         "rsiStatus": rsi_label,
         "smaTrend": trend_status,
         "newsSentiment": news_label,
-        "summary": " ".join(summary_parts)
+        "summary": " ".join(summary_parts),
+        "data_source": chart_data.get("data_source", DATA_SOURCE_LIVE),
+        "last_updated_ts": chart_data.get("last_updated_ts", int(time.time())),
+        "data_warnings": chart_data.get("data_warnings", [])
     }
 
+
+@app.get("/api/trade-idea")
+def get_trade_idea(
+    symbol: str = Query(...),
+    timeframe: str = "1d",
+    capital: float = 10000.0,
+    risk_pct: float = 0.01
+):
+    """
+    Motor determinista de Fichas de Operación Cuantitativas y Sizing.
+    Genera orden con Entrada, Stop Loss (S1/ATR), Take Profit 1.5R/3R, sizing por riesgo fijo y disclaimer.
+    """
+    sym = symbol.upper().strip()
+    tf = str(timeframe.default if hasattr(timeframe, "default") else timeframe)
+    cap = float(capital.default if hasattr(capital, "default") else capital)
+    rp = float(risk_pct.default if hasattr(risk_pct, "default") else risk_pct)
+
+    valid_configs = {
+        "1d": ("1d", "5m"),
+        "1w": ("5d", "15m"),
+        "1m": ("1mo", "1d")
+    }
+    range_val, interval_val = valid_configs.get(tf, ("1d", "5m"))
+    
+    chart_data = fetch_symbol_chart(sym, range_val=range_val, interval=interval_val)
+    if not chart_data:
+        raise HTTPException(status_code=404, detail="Datos no disponibles para el símbolo")
+        
+    # Marco multitemporal semanal
+    weekly_data = None
+    try:
+        weekly_data = fetch_symbol_chart(sym, range_val="1mo", interval="1d")
+    except Exception:
+        pass
+
+    # Sentimiento léxico de noticias
+    news_ratio = 0.0
+    try:
+        news_items = get_news(symbols=sym, limit=8)
+        bull = sum(1 for n in news_items if n.get("sentiment") == "bullish")
+        bear = sum(1 for n in news_items if n.get("sentiment") == "bearish")
+        total = bull + bear
+        if total > 0:
+            news_ratio = (bull - bear) / total
+    except Exception:
+        pass
+
+    idea = generate_trade_idea(
+        symbol=sym,
+        chart_data=chart_data,
+        timeframe=tf,
+        capital=max(100.0, cap),
+        risk_pct=max(0.001, min(0.05, rp)),
+        news_sentiment_ratio=news_ratio,
+        weekly_chart_data=weekly_data
+    )
+    return idea
+
+
+class BacktestRequest(BaseModel):
+    symbols: Optional[List[str]] = None
+    timeframe: str = "1d"
+    initial_capital: float = 50000.0
+    risk_pct_per_trade: float = 0.01
+    commission_pct: float = 0.0005
+    slippage_pct: float = 0.0005
+    max_holding_bars: int = 20
+
+
+@app.post("/api/backtest")
+def trigger_backtest(req: BacktestRequest):
+    """
+    Ejecuta backtesting cuantitativo sin lookahead bias.
+    Split 70% In-Sample / 30% Out-of-Sample, comisiones, slippage y Monte Carlo.
+    """
+    syms = req.symbols if req.symbols else ["AAPL", "NVDA", "MSFT", "AMZN", "SPY"]
+    res = execute_full_backtest(
+        symbols=syms,
+        initial_capital=req.initial_capital,
+        risk_pct_per_trade=req.risk_pct_per_trade,
+        commission_pct=req.commission_pct,
+        slippage_pct=req.slippage_pct,
+        max_holding_bars=req.max_holding_bars
+    )
+    return res
+
+
+@app.get("/api/backtest/{backtest_id}")
+def get_backtest_status(backtest_id: str):
+    """Obtiene el resultado y métricas de una corrida de backtesting."""
+    if backtest_id not in BACKTEST_RESULTS:
+        raise HTTPException(status_code=404, detail="ID de backtest no encontrado")
+    return BACKTEST_RESULTS[backtest_id]
+
+
+@app.get("/api/model/status")
+def get_model_status():
+    """
+    Devuelve el estado del modelo campeón de Machine Learning,
+    calibración de probabilidades Brier score y monitor de Model Drift.
+    """
+    return get_model_status_summary()
+
+
+class ExplainRequest(BaseModel):
+    trade_idea: Dict[str, Any]
+    market_context: Optional[Dict[str, Any]] = None
+
+
+@app.post("/api/trade-idea/explain")
+def explain_trade_idea(req: ExplainRequest):
+    """
+    Explicación cualitativa asistida por IA con validador estricto antifantasías.
+    Descarta cualquier alucinación numérica y garantiza coherencia total con la ficha.
+    """
+    return generate_trade_explanation(req.trade_idea, req.market_context)
 
 
 @app.get("/api/news")

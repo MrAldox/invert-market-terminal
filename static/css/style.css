@@ -2612,4 +2612,25 @@ body.light-theme .prob-bar-track {
   background: #e2e8f0;
 }
 
+/* Trade Idea Component Enhancements */
+.analysis-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary) !important;
+}
+
+#tradeIdeaCapitalInput:focus,
+#tradeIdeaRiskSelect:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+@media (max-width: 768px) {
+  #tradeIdeaCapitalInput,
+  #tradeIdeaRiskSelect {
+    font-size: 16px !important;
+  }
+}
+
+
 

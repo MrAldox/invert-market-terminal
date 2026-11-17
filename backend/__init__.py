@@ -1,0 +1,1 @@
+# INVERT Quantitative Trading System

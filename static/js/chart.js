@@ -82,13 +82,16 @@ const ChartEngine = {
   renderInteractiveChart(canvas, historyPoints, symbol, isPositive, prevClose) {
     if (!canvas || !historyPoints || historyPoints.length === 0) return;
 
+    const prevOverlays = this._activeChart ? this._activeChart.overlays : null;
     this._activeChart = {
       canvas,
       points: historyPoints,
       symbol,
       isPositive,
       prevClose: prevClose || historyPoints[0].close,
-      hoverIdx: null
+      hoverIdx: null,
+      overlays: prevOverlays,
+      redraw: null
     };
 
     const draw = () => {
@@ -188,6 +191,43 @@ const ChartEngine = {
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
       ctx.stroke();
+
+      // Draw Trade Idea Levels Overlay (if active)
+      if (c.overlays && minPrice && maxPrice) {
+        const levels = [
+          { label: 'ENTRADA', price: c.overlays.entry, color: '#38bdf8', dash: [6, 4] },
+          { label: 'STOP LOSS', price: c.overlays.stop_loss, color: '#ef4444', dash: [4, 4] },
+          { label: 'TP 1 (1.5R)', price: c.overlays.tp1, color: '#10b981', dash: [6, 4] },
+          { label: 'TP 2 (3.0R)', price: c.overlays.tp2, color: '#059669', dash: [8, 4] }
+        ];
+
+        levels.forEach(lvl => {
+          if (lvl.price && lvl.price >= minPrice * 0.85 && lvl.price <= maxPrice * 1.15) {
+            const y = padTop + chartH - ((lvl.price - minPrice) / priceRange) * chartH;
+            if (y >= padTop - 5 && y <= padTop + chartH + 5) {
+              ctx.save();
+              ctx.strokeStyle = lvl.color;
+              ctx.lineWidth = 1.5;
+              ctx.setLineDash(lvl.dash);
+              ctx.beginPath();
+              ctx.moveTo(padLeft, y);
+              ctx.lineTo(padLeft + chartW, y);
+              ctx.stroke();
+
+              // Badge indicator
+              ctx.setLineDash([]);
+              ctx.fillStyle = lvl.color;
+              ctx.font = 'bold 9px Inter, monospace';
+              const txt = `${lvl.label}: $${Number(lvl.price).toFixed(2)}`;
+              const tw = ctx.measureText(txt).width;
+              ctx.fillRect(padLeft + chartW - tw - 12, y - 14, tw + 10, 14);
+              ctx.fillStyle = '#0f172a';
+              ctx.fillText(txt, padLeft + chartW - tw - 7, y - 3);
+              ctx.restore();
+            }
+          }
+        });
+      }
 
       // Draw Time labels at bottom
       ctx.fillStyle = '#64748b';
@@ -326,6 +366,27 @@ const ChartEngine = {
       });
 
       canvas._hasChartEvents = true;
+    }
+
+    this._activeChart.redraw = draw;
+    draw();
+  },
+
+  setTradeOverlays(overlays) {
+    if (this._activeChart) {
+      this._activeChart.overlays = overlays;
+      if (typeof this._activeChart.redraw === 'function') {
+        this._activeChart.redraw();
+      }
+    }
+  },
+
+  clearTradeOverlays() {
+    if (this._activeChart) {
+      this._activeChart.overlays = null;
+      if (typeof this._activeChart.redraw === 'function') {
+        this._activeChart.redraw();
+      }
     }
   }
 };

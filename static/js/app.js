@@ -442,9 +442,50 @@ function setupModals() {
       State.activeAnalysisTimeframe = e.currentTarget.dataset.analysisTf;
       if (State.activeAnalysisSymbol) {
         loadStockAnalysis(State.activeAnalysisSymbol, State.activeAnalysisTimeframe);
+        if (window.TradeIdeaModule) {
+          window.TradeIdeaModule.loadTradeIdea(State.activeAnalysisSymbol, State.activeAnalysisTimeframe);
+        }
       }
     });
   });
+
+  // Analysis Modal Tabs (Pronóstico vs Ficha de Operación)
+  const tabForecast = document.getElementById('tabBtnForecast');
+  const tabTradeIdea = document.getElementById('tabBtnTradeIdea');
+  const panelForecast = document.getElementById('panelForecastTab');
+  const panelTradeIdea = document.getElementById('panelTradeIdeaTab');
+
+  if (tabForecast && tabTradeIdea) {
+    tabForecast.addEventListener('click', () => {
+      tabForecast.classList.add('active');
+      tabForecast.style.background = 'var(--bg-card)';
+      tabForecast.style.color = 'var(--text-primary)';
+
+      tabTradeIdea.classList.remove('active');
+      tabTradeIdea.style.background = 'transparent';
+      tabTradeIdea.style.color = 'var(--text-muted)';
+
+      if (panelForecast) panelForecast.style.display = 'block';
+      if (panelTradeIdea) panelTradeIdea.style.display = 'none';
+    });
+
+    tabTradeIdea.addEventListener('click', () => {
+      tabTradeIdea.classList.add('active');
+      tabTradeIdea.style.background = 'var(--bg-card)';
+      tabTradeIdea.style.color = 'var(--text-primary)';
+
+      tabForecast.classList.remove('active');
+      tabForecast.style.background = 'transparent';
+      tabForecast.style.color = 'var(--text-muted)';
+
+      if (panelForecast) panelForecast.style.display = 'none';
+      if (panelTradeIdea) panelTradeIdea.style.display = 'block';
+
+      if (window.TradeIdeaModule) {
+        window.TradeIdeaModule.loadTradeIdea(State.activeAnalysisSymbol || 'AAPL', State.activeAnalysisTimeframe || '1d');
+      }
+    });
+  }
 
   const launchFromChartBtn = document.getElementById('modalLaunchAnalysisBtn');
   if (launchFromChartBtn) {
@@ -1029,7 +1070,27 @@ async function openAnalysisModal(symbol, timeframe = '1d') {
     // Open modal immediately
     modal.classList.add('open');
 
+    // Default to forecast tab initially
+    const tabF = document.getElementById('tabBtnForecast');
+    const tabT = document.getElementById('tabBtnTradeIdea');
+    const pF = document.getElementById('panelForecastTab');
+    const pT = document.getElementById('panelTradeIdeaTab');
+    if (tabF && tabT && pF && pT) {
+      tabF.classList.add('active');
+      tabF.style.background = 'var(--bg-card)';
+      tabF.style.color = 'var(--text-primary)';
+      tabT.classList.remove('active');
+      tabT.style.background = 'transparent';
+      tabT.style.color = 'var(--text-muted)';
+      pF.style.display = 'block';
+      pT.style.display = 'none';
+    }
+
     await loadStockAnalysis(symbol, timeframe);
+
+    if (window.TradeIdeaModule) {
+      window.TradeIdeaModule.loadTradeIdea(symbol, timeframe);
+    }
   } catch (err) {
     console.error('Error in openAnalysisModal:', err);
   }

@@ -631,116 +631,152 @@
       </div>
 
       <div class="modal-body">
-        <!-- Timeframe Selector -->
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--bg-card); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">
-            <i class="fa-regular fa-clock" style="color: var(--color-accent);"></i> Horizonte Temporal a Analizar:
-          </span>
-          <div class="timeframe-group">
-            <button class="analysis-tf-btn active" data-analysis-tf="1d">Hoy (1D)</button>
-            <button class="analysis-tf-btn" data-analysis-tf="1w">Semana (1S)</button>
-            <button class="analysis-tf-btn" data-analysis-tf="1m">Mes (1M)</button>
+        <!-- Pestañas de Navegación del Modal de Análisis -->
+        <div class="analysis-tabs-nav" style="display: flex; gap: 8px; margin-bottom: 14px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <button class="analysis-tab-btn active" id="tabBtnForecast" style="flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); border: none; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; background: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-chart-line" style="color: var(--color-accent);"></i> Pronóstico y Métricas
+          </button>
+          <button class="analysis-tab-btn" id="tabBtnTradeIdea" style="flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); border: none; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-ticket" style="color: #10b981;"></i> Ficha de Operación
+          </button>
+        </div>
+
+        <!-- Pestaña 1: Pronóstico y Métricas Existente -->
+        <div id="panelForecastTab">
+          <!-- Timeframe Selector -->
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--bg-card); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 14px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">
+              <i class="fa-regular fa-clock" style="color: var(--color-accent);"></i> Horizonte Temporal a Analizar:
+            </span>
+            <div class="timeframe-group">
+              <button class="analysis-tf-btn active" data-analysis-tf="1d">Hoy (1D)</button>
+              <button class="analysis-tf-btn" data-analysis-tf="1w">Semana (1S)</button>
+              <button class="analysis-tf-btn" data-analysis-tf="1m">Mes (1M)</button>
+            </div>
+          </div>
+
+          <!-- Verdict Banner & Speedometer Gauge -->
+          <div class="analysis-verdict-box">
+            <div class="verdict-header">
+              <div>
+                <span class="verdict-mini-title">Veredicto Algorítmico</span>
+                <div class="verdict-main-text" id="analysisVerdictText">COMPRA MODERADA</div>
+              </div>
+              <div class="badge-pct" id="analysisVerdictBadge" style="font-size: 0.85rem; padding: 6px 12px;">
+                🟢 Sesgo Alcista
+              </div>
+            </div>
+
+            <!-- Speedometer-style Gauge -->
+            <div class="gauge-container">
+              <div class="gauge-labels">
+                <span style="color: #ef4444;">Venta Fuerte</span>
+                <span style="color: #f87171;">Venta</span>
+                <span style="color: #f59e0b;">Neutral</span>
+                <span style="color: #34d399;">Compra</span>
+                <span style="color: #10b981;">Compra Fuerte</span>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-segment seg-strong-sell"></div>
+                <div class="gauge-segment seg-sell"></div>
+                <div class="gauge-segment seg-neutral"></div>
+                <div class="gauge-segment seg-buy"></div>
+                <div class="gauge-segment seg-strong-buy"></div>
+                <div class="gauge-needle" id="analysisGaugeNeedle" style="left: 50%;"></div>
+              </div>
+            </div>
+
+            <!-- Probabilities Bar -->
+            <div class="prob-wrapper">
+              <div class="prob-header">
+                <span style="color: var(--color-green-text); font-weight: 700;" id="analysisProbBullish">50% Probabilidad Alcista ▲</span>
+                <span style="color: var(--color-red-text); font-weight: 700;" id="analysisProbBearish">50% Probabilidad Bajista ▼</span>
+              </div>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill-bullish" id="analysisProbFillBullish" style="width: 50%;"></div>
+                <div class="prob-bar-fill-bearish" id="analysisProbFillBearish" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Projected Price Corridor -->
+          <div class="corridor-box">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+              <i class="fa-solid fa-crosshairs" style="color: var(--color-accent);"></i> Corredor de Precios Estimado
+            </div>
+            <div class="corridor-grid">
+              <div class="corridor-card">
+                <span class="corridor-label">🛡️ Soporte Clave</span>
+                <span class="corridor-val" style="color: #f87171;" id="analysisSupportPrice">$0.00</span>
+              </div>
+              <div class="corridor-card" style="border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.06);">
+                <span class="corridor-label">📍 Precio Actual</span>
+                <span class="corridor-val" id="analysisCurrentPrice">$0.00</span>
+              </div>
+              <div class="corridor-card" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.06);">
+                <span class="corridor-label">🎯 Objetivo Estimado</span>
+                <span class="corridor-val" style="color: var(--color-green-text);" id="analysisTargetPrice">$0.00</span>
+              </div>
+              <div class="corridor-card">
+                <span class="corridor-label">🚧 Resistencia Clave</span>
+                <span class="corridor-val" style="color: var(--color-yellow);" id="analysisResistancePrice">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plain Spanish Explanation Box -->
+          <div class="analysis-explanation-box">
+            <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-lightbulb" style="color: var(--color-yellow);"></i> ¿Cómo entender este pronóstico?
+            </div>
+            <p id="analysisSummaryText" style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+              Cargando análisis cuantitativo...
+            </p>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="modal-stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">RSI (Fuerza Relativa 14)</span>
+              <span class="stat-value" id="analysisRSI">50.0</span>
+              <span style="font-size: 0.7rem; color: var(--text-muted);" id="analysisRSIStatus">Neutral</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Estructura Medias Móviles</span>
+              <span class="stat-value" style="font-size: 0.85rem;" id="analysisSMATrend">Calculando...</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Sentimiento de Noticias</span>
+              <span class="stat-value" style="font-size: 0.85rem;" id="analysisNewsSentiment">Neutral</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Acción Sugerida</span>
+              <span class="stat-value" style="font-size: 0.95rem; font-weight: 800;" id="analysisSuggestedAction">MANTENER</span>
+            </div>
           </div>
         </div>
 
-        <!-- Verdict Banner & Speedometer Gauge -->
-        <div class="analysis-verdict-box">
-          <div class="verdict-header">
-            <div>
-              <span class="verdict-mini-title">Veredicto Algorítmico</span>
-              <div class="verdict-main-text" id="analysisVerdictText">COMPRA MODERADA</div>
+        <!-- Pestaña 2: Ficha de Operación Cuantitativa -->
+        <div id="panelTradeIdeaTab" style="display: none;">
+          <!-- Parámetros de Riesgo y Capital -->
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--bg-card); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Capital:</span>
+              <input type="number" id="tradeIdeaCapitalInput" value="10000" min="100" step="500" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 16px; font-family: var(--font-mono); width: 110px;">
             </div>
-            <div class="badge-pct" id="analysisVerdictBadge" style="font-size: 0.85rem; padding: 6px 12px;">
-              🟢 Sesgo Alcista
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Riesgo:</span>
+              <select id="tradeIdeaRiskSelect" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 16px; font-family: var(--font-mono);">
+                <option value="0.005">0.5%</option>
+                <option value="0.01" selected>1.0%</option>
+                <option value="0.02">2.0%</option>
+              </select>
             </div>
           </div>
 
-          <!-- Speedometer-style Gauge -->
-          <div class="gauge-container">
-            <div class="gauge-labels">
-              <span style="color: #ef4444;">Venta Fuerte</span>
-              <span style="color: #f87171;">Venta</span>
-              <span style="color: #f59e0b;">Neutral</span>
-              <span style="color: #34d399;">Compra</span>
-              <span style="color: #10b981;">Compra Fuerte</span>
-            </div>
-            <div class="gauge-track">
-              <div class="gauge-segment seg-strong-sell"></div>
-              <div class="gauge-segment seg-sell"></div>
-              <div class="gauge-segment seg-neutral"></div>
-              <div class="gauge-segment seg-buy"></div>
-              <div class="gauge-segment seg-strong-buy"></div>
-              <div class="gauge-needle" id="analysisGaugeNeedle" style="left: 50%;"></div>
-            </div>
-          </div>
-
-          <!-- Probabilities Bar -->
-          <div class="prob-wrapper">
-            <div class="prob-header">
-              <span style="color: var(--color-green-text); font-weight: 700;" id="analysisProbBullish">50% Probabilidad Alcista ▲</span>
-              <span style="color: var(--color-red-text); font-weight: 700;" id="analysisProbBearish">50% Probabilidad Bajista ▼</span>
-            </div>
-            <div class="prob-bar-track">
-              <div class="prob-bar-fill-bullish" id="analysisProbFillBullish" style="width: 50%;"></div>
-              <div class="prob-bar-fill-bearish" id="analysisProbFillBearish" style="width: 50%;"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Projected Price Corridor -->
-        <div class="corridor-box">
-          <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
-            <i class="fa-solid fa-crosshairs" style="color: var(--color-accent);"></i> Corredor de Precios Estimado
-          </div>
-          <div class="corridor-grid">
-            <div class="corridor-card">
-              <span class="corridor-label">🛡️ Soporte Clave</span>
-              <span class="corridor-val" style="color: #f87171;" id="analysisSupportPrice">$0.00</span>
-            </div>
-            <div class="corridor-card" style="border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.06);">
-              <span class="corridor-label">📍 Precio Actual</span>
-              <span class="corridor-val" id="analysisCurrentPrice">$0.00</span>
-            </div>
-            <div class="corridor-card" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.06);">
-              <span class="corridor-label">🎯 Objetivo Estimado</span>
-              <span class="corridor-val" style="color: var(--color-green-text);" id="analysisTargetPrice">$0.00</span>
-            </div>
-            <div class="corridor-card">
-              <span class="corridor-label">🚧 Resistencia Clave</span>
-              <span class="corridor-val" style="color: var(--color-yellow);" id="analysisResistancePrice">$0.00</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Plain Spanish Explanation Box -->
-        <div class="analysis-explanation-box">
-          <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-lightbulb" style="color: var(--color-yellow);"></i> ¿Cómo entender este pronóstico?
-          </div>
-          <p id="analysisSummaryText" style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
-            Cargando análisis cuantitativo...
-          </p>
-        </div>
-
-        <!-- Key Metrics Grid -->
-        <div class="modal-stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">RSI (Fuerza Relativa 14)</span>
-            <span class="stat-value" id="analysisRSI">50.0</span>
-            <span style="font-size: 0.7rem; color: var(--text-muted);" id="analysisRSIStatus">Neutral</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Estructura Medias Móviles</span>
-            <span class="stat-value" style="font-size: 0.85rem;" id="analysisSMATrend">Calculando...</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Sentimiento de Noticias</span>
-            <span class="stat-value" style="font-size: 0.85rem;" id="analysisNewsSentiment">Neutral</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Acción Sugerida</span>
-            <span class="stat-value" style="font-size: 0.95rem; font-weight: 800;" id="analysisSuggestedAction">MANTENER</span>
-          </div>
+          <!-- Contenedor dinámico de la Ficha -->
+          <div id="tradeIdeaContent"></div>
         </div>
 
       </div>
@@ -858,6 +894,7 @@
 
   <!-- Scripts -->
   <script src="js/chart.js"></script>
+  <script src="js/trade-idea.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
